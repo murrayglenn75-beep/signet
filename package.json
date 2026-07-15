@@ -1,0 +1,16 @@
+{
+  "name": "signet",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "test": "vitest run tests/acceptance.test.ts",
+    "test:watch": "vitest tests/acceptance.test.ts",
+    "db:reset": "supabase db reset"
+  },
+  "devDependencies": {
+    "postgres": "^3.4.5",
+    "typescript": "^5.6.0",
+    "vitest": "^2.1.0"
+  }
+}

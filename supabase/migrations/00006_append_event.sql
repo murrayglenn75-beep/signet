@@ -1,0 +1,32 @@
+-- ============================================================
+-- 00006: append_event RPC + Change-Order Gate.
+-- SKELETON — Claude Code implements. Upholds invariants 1, 6.
+-- This is the ONLY write path into the system. Spec §3.3 (taxonomy),
+-- §6 (gate semantics).
+-- ============================================================
+
+-- TODO(claude-code): implement
+-- create or replace function append_event(
+--   p_org uuid,
+--   p_stream_type text, p_stream_id uuid, p_event_type text,
+--   p_payload jsonb, p_actor_type text default 'human', p_actor_id text default null
+-- ) returns bigint language plpgsql security definer as ...
+--
+-- Steps:
+--   1. Validate event_type against the taxonomy; schema-check payload keys.
+--      Reject unknown event types.
+--   2. GATES. Phase 1: Change-Order Gate —
+--      trigger: p_event_type = 'time_entry.logged' AND engagement fee_model='fixed'
+--      predicate: entry would push engagement hours_logged past
+--                 1.10 * planned_hours net of approved_co_hours
+--      enforcement: raise exception with structured detail
+--        message json: {"gate":"CHANGE_ORDER","deficit_hours":n}
+--      UNLESS payload->'override'->>'change_order_id' references a CO with an
+--      approve decision covering the hours, OR a prior
+--      change_order.decided(absorb) event covers the deficit.
+--      Absorb is allowed — silent absorb is not. The decision must be an event.
+--   3. Insert into events (chain trigger fires automatically).
+--   4. Fan-out already handled by trigger (apply_event + recompute_signals).
+--   5. Return seq.
+--
+-- grant execute on function append_event to authenticated;
