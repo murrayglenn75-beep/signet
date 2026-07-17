@@ -180,6 +180,20 @@ begin
   -- 1. Schema-validate payload per event_type; reject unknown types.
   perform validate_event_payload(p_event_type, p_payload);
 
+  -- 1b. AI boundary (spec §7, invariant 4): ai.narrated events must be
+  -- attributed to the AI actor, and actor_type 'ai' must never appear on
+  -- anything else. Without this, an AI-attributed time_entry.logged
+  -- would sail through, or a human could file an ai.narrated event under
+  -- their own name — both violate "never route AI output into the
+  -- system except as an ai.narrated event via append_event()".
+  if (p_event_type = 'ai.narrated') <> (p_actor_type = 'ai') then
+    raise exception
+      'append_event: ai.narrated events must have actor_type ''ai'', and '
+      'actor_type ''ai'' may only be used for ai.narrated events '
+      '(got event_type="%", actor_type="%")', p_event_type, p_actor_type
+      using errcode = '22023';
+  end if;
+
   -- 2. GATES. Phase 1: the Change-Order Gate (spec §6).
   if p_event_type = 'time_entry.logged' then
     perform check_change_order_gate(

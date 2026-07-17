@@ -19,3 +19,16 @@ grant usage on schema public to ai_narrator;
 grant select on signals to ai_narrator;
 grant select on trust_ledger to ai_narrator;
 -- Nothing else. Ever. (Acceptance test 6 enforces this.)
+
+-- Test 6 connects as `postgres` and does `set local role ai_narrator` —
+-- that requires postgres to hold membership in ai_narrator, not just
+-- superuser status (this Supabase stack's `postgres` role apparently
+-- doesn't get blanket SET ROLE). Guarded by a role-existence check so
+-- this stays idempotent whether or not a role literally named
+-- "postgres" exists (it does, locally and on hosted Supabase; the guard
+-- costs nothing and avoids a hard failure if that ever isn't true).
+do $$ begin
+  if exists (select 1 from pg_roles where rolname = 'postgres') then
+    grant ai_narrator to postgres;
+  end if;
+end $$;
