@@ -160,18 +160,22 @@ describe("3. projections rebuild identically from replay", () => {
 
     const live = await sql`
       select * from proj_engagements where org_id = ${ORG}::uuid
+      and stream_id = ${eng}::uuid
       order by stream_id`;
     const liveLines = await sql`
       select * from proj_budget_lines where org_id = ${ORG}::uuid
+      and stream_id = ${line}::uuid
       order by stream_id`;
 
     await sql`select rebuild_projections(${ORG}::uuid)`;
 
     const replayed = await sql`
       select * from proj_engagements where org_id = ${ORG}::uuid
+      and stream_id = ${eng}::uuid
       order by stream_id`;
     const replayedLines = await sql`
       select * from proj_budget_lines where org_id = ${ORG}::uuid
+      and stream_id = ${line}::uuid
       order by stream_id`;
 
     expect(replayed).toEqual(live);
