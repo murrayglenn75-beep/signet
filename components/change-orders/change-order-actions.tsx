@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useRef } from "react";
 import { Check, ShieldCheck, X } from "lucide-react";
 import {
   decideChangeOrderWithState,
@@ -27,6 +27,10 @@ export function ChangeOrderActions({
     initialState
   );
 
+  const approveKey = useRef(crypto.randomUUID());
+  const absorbKey = useRef(crypto.randomUUID());
+  const declineKey = useRef(crypto.randomUUID());
+
   return (
     <div className="decision-stack">
       <div className="gate-actions">
@@ -35,6 +39,11 @@ export function ChangeOrderActions({
             type="hidden"
             name="change_order_id"
             value={changeOrderId}
+          />
+          <input
+            type="hidden"
+            name="idempotency_key"
+            value={approveKey.current}
           />
           <input type="hidden" name="decision" value="approve" />
           <input
@@ -64,6 +73,11 @@ export function ChangeOrderActions({
             name="change_order_id"
             value={changeOrderId}
           />
+          <input
+            type="hidden"
+            name="idempotency_key"
+            value={absorbKey.current}
+          />
           <input type="hidden" name="decision" value="absorb" />
           <input
             type="hidden"
@@ -86,6 +100,11 @@ export function ChangeOrderActions({
             type="hidden"
             name="change_order_id"
             value={changeOrderId}
+          />
+          <input
+            type="hidden"
+            name="idempotency_key"
+            value={declineKey.current}
           />
           <input type="hidden" name="decision" value="decline" />
           <input type="hidden" name="approved_hours" value="0" />

@@ -77,6 +77,10 @@ export async function decideChangeOrder(
     formData.get("change_order_id") ?? ""
   );
 
+  const idempotencyKey = String(
+    formData.get("idempotency_key") ?? ""
+  );
+
   const decision = String(
     formData.get("decision") ?? ""
   ) as ChangeOrderDecision;
@@ -96,6 +100,13 @@ export async function decideChangeOrder(
     };
   }
 
+  if (!idempotencyKey) {
+    return {
+      ok: false,
+      error: "Missing idempotency key.",
+    };
+  }
+
   if (
     decision !== "approve" &&
     decision !== "absorb" &&
@@ -108,27 +119,21 @@ export async function decideChangeOrder(
   }
 
   const { data, error } = await supabase.rpc(
-    "append_event",
+    "decide_change_order",
     {
       p_org: orgId,
-      p_stream_type: "change_order",
-      p_stream_id: changeOrderId,
-      p_event_type: "change_order.decided",
-      p_payload: {
-        change_order_id: changeOrderId,
-        decision,
-        approved_hours:
-          decision === "decline" ? 0 : approvedHours,
-        approved_fee:
-          decision === "approve" ? approvedFee : 0,
-      },
-      p_actor_type: "human",
-      p_actor_id: null,
+      p_change_order_id: changeOrderId,
+      p_decision: decision,
+      p_approved_hours:
+        decision === "decline" ? 0 : approvedHours,
+      p_approved_fee:
+        decision === "approve" ? approvedFee : 0,
+      p_idempotency_key: idempotencyKey,
     }
   );
 
   if (error) {
-    console.error("Signet append_event failed", {
+    console.error("Signet decide_change_order failed", {
       code: error.code,
       message: error.message,
     });
@@ -175,7 +180,7 @@ export async function decideChangeOrder(
 
     return {
       ok: false,
-      error: "Event was appended but its verified receipt could not be read.",
+      error: "Event was recorded but its verified receipt could not be read.",
     };
   }
 
