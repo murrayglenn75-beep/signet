@@ -13,7 +13,7 @@ async function appendTrusted(
   streamType: string,
   streamId: string,
   eventType: string,
-  payload: Record<string, unknown>
+  payload: Parameters<typeof sql.json>[0]
 ) {
   const [row] = await sql`
     select append_event(
