@@ -23,7 +23,7 @@ async function append(
   streamType: string,
   streamId: string,
   eventType: string,
-  payload: Record<string, unknown>,
+  payload: Parameters<typeof sql.json>[0],
   actorType = "human",
   actorId = "test-user"
 ): Promise<number> {
@@ -43,6 +43,7 @@ beforeAll(async () => {
   // here in test setup — this is the test harness's privilege, never the app's).
   await sql`set session_replication_role = replica`;
   await sql`delete from events where org_id = ${ORG}::uuid`;
+  await sql`delete from chain_heads where org_id = ${ORG}::uuid`;
   await sql`set session_replication_role = default`;
   await sql`delete from signals where org_id = ${ORG}::uuid`;
   await sql`delete from proj_engagements where org_id = ${ORG}::uuid`;
