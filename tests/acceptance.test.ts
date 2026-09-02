@@ -333,11 +333,11 @@ describe("5. change-order gate on fixed-fee engagements", () => {
 // TEST 6 — AI boundary: ai_narrator reads signals + trust_ledger, nothing else.
 // ---------------------------------------------------------------------------
 describe("6. ai_narrator role is scoped to signals and trust_ledger", () => {
-  it("can select signals and trust_ledger; everything else is denied", async () => {
+  it("can select signals and AI trust ledger RPC; everything else is denied", async () => {
     await sql.begin(async (tx) => {
       await tx`set local role ai_narrator`;
       await tx`select * from signals limit 1`;          // must succeed
-      await tx`select * from trust_ledger limit 1`;     // must succeed
+      await tx`select * from public.get_trust_ledger_for_ai() limit 1`;     // must succeed
     });
 
     await expect(

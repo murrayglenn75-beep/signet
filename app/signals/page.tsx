@@ -149,10 +149,7 @@ export default async function SignalsPage() {
   let ledgerError = false;
 
   if (evidenceSeqs.length > 0) {
-    const { data: ledgerData, error: ledgerQueryError } = await supabase
-      .from("trust_ledger")
-      .select("seq,event_type")
-      .in("seq", evidenceSeqs);
+    const { data: ledgerData, error: ledgerQueryError } = await supabase.rpc("get_trust_ledger_evidence", { p_seqs: evidenceSeqs });
 
     ledgerError = Boolean(ledgerQueryError);
 

@@ -199,11 +199,7 @@ export default async function Home() {
     supabase
       .from("proj_invoices")
       .select("stream_id,engagement_id"),
-    supabase
-      .from("trust_ledger")
-      .select("seq,hash")
-      .order("seq", { ascending: false })
-      .limit(1),
+    supabase.rpc("get_trust_ledger_head"),
   ]);
 
   const engagements = (engagementResult.data ?? []) as EngagementRow[];
