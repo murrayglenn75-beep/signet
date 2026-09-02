@@ -119,7 +119,7 @@ export async function decideChangeOrder(
   }
 
   const { data, error } = await supabase.rpc(
-    "decide_change_order",
+    "decide_change_order_with_receipt",
     {
       p_org: orgId,
       p_change_order_id: changeOrderId,
@@ -133,7 +133,7 @@ export async function decideChangeOrder(
   );
 
   if (error) {
-    console.error("Signet decide_change_order failed", {
+    console.error("Signet decide_change_order_with_receipt failed", {
       code: error.code,
       message: error.message,
     });
@@ -144,43 +144,61 @@ export async function decideChangeOrder(
     };
   }
 
-  const seq = Number(data);
+  const receipt =
+    data && typeof data === "object" && !Array.isArray(data)
+      ? (data as Record<string, unknown>)
+      : null;
 
-  if (!Number.isSafeInteger(seq) || seq <= 0) {
-    return {
-      ok: false,
-      error: "Kernel returned an invalid event sequence.",
-    };
-  }
+  const seq = Number(receipt?.seq);
 
-  const { data: receipt, error: receiptError } = await supabase
-    .from("events")
-    .select(
-      "seq,event_id,hash,occurred_at,stream_type,stream_id,event_type"
-    )
-    .eq("seq", seq)
-    .eq("org_id", orgId)
-    .eq("stream_type", "change_order")
-    .eq("stream_id", changeOrderId)
-    .eq("event_type", "change_order.decided")
-    .single();
+  const eventId =
+    typeof receipt?.event_id === "string"
+      ? receipt.event_id
+      : "";
+
+  const hash =
+    typeof receipt?.hash === "string"
+      ? receipt.hash
+      : "";
+
+  const occurredAt =
+    typeof receipt?.occurred_at === "string"
+      ? receipt.occurred_at
+      : "";
+
+  const streamType =
+    typeof receipt?.stream_type === "string"
+      ? receipt.stream_type
+      : "";
+
+  const streamId =
+    typeof receipt?.stream_id === "string"
+      ? receipt.stream_id
+      : "";
+
+  const eventType =
+    typeof receipt?.event_type === "string"
+      ? receipt.event_type
+      : "";
 
   if (
-    receiptError ||
-    !receipt ||
-    receipt.seq !== seq ||
-    !receipt.event_id ||
-    !receipt.hash ||
-    !receipt.occurred_at
+    !Number.isSafeInteger(seq) ||
+    seq <= 0 ||
+    !eventId ||
+    !hash ||
+    !occurredAt ||
+    streamType !== "change_order" ||
+    streamId !== changeOrderId ||
+    eventType !== "change_order.decided"
   ) {
     console.error("Signet receipt verification failed", {
       seq,
-      receiptError,
+      receipt,
     });
 
     return {
       ok: false,
-      error: "Event was recorded but its verified receipt could not be read.",
+      error: "Kernel returned an invalid verified receipt.",
     };
   }
 
@@ -192,9 +210,9 @@ export async function decideChangeOrder(
   return {
     ok: true,
     seq,
-    eventId: receipt.event_id,
-    hash: receipt.hash,
-    occurredAt: receipt.occurred_at,
+    eventId,
+    hash,
+    occurredAt,
     changeOrderId,
     decision,
   };

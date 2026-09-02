@@ -278,3 +278,180 @@ describe("9. change-order authorization hardening", () => {
     expect(Number(projection.hours_logged)).toBe(10.75);
   });
 });
+
+describe("10. authenticated database isolation", () => {
+  it("rejects a cross-org decide_change_order command", async () => {
+    const orgA = uuid();
+    const orgB = uuid();
+    const userId = uuid();
+
+    await expect(
+      sql.begin(async (tx) => {
+        await tx`select set_config(
+          'request.jwt.claims',
+          ${JSON.stringify({
+            sub: userId,
+            role: "authenticated",
+            org_id: orgA,
+          })},
+          true
+        )`;
+
+        await tx`set local role authenticated`;
+
+        await tx`
+          select decide_change_order(
+            ${orgB}::uuid,
+            ${uuid()}::uuid,
+            'approve',
+            1,
+            100,
+            ${uuid()}::uuid
+          )
+        `;
+      })
+    ).rejects.toThrow(
+      /requested org does not match authenticated org/
+    );
+  });
+
+  it("denies authenticated direct mutation of the events table", async () => {
+    const org = uuid();
+    const userId = uuid();
+    const engagement = await createEngagement(org, { fixed: false });
+
+    await expect(
+      sql.begin(async (tx) => {
+        await tx`select set_config(
+          'request.jwt.claims',
+          ${JSON.stringify({
+            sub: userId,
+            role: "authenticated",
+            org_id: org,
+          })},
+          true
+        )`;
+
+        await tx`set local role authenticated`;
+
+        await tx`
+          update events
+          set actor_id = 'direct-write-attempt'
+          where org_id = ${org}::uuid
+            and stream_id = ${engagement}::uuid
+        `;
+      })
+    ).rejects.toThrow(/permission denied|append-only/i);
+
+    await expect(
+      sql.begin(async (tx) => {
+        await tx`select set_config(
+          'request.jwt.claims',
+          ${JSON.stringify({
+            sub: userId,
+            role: "authenticated",
+            org_id: org,
+          })},
+          true
+        )`;
+
+        await tx`set local role authenticated`;
+
+        await tx`
+          delete from events
+          where org_id = ${org}::uuid
+            and stream_id = ${engagement}::uuid
+        `;
+      })
+    ).rejects.toThrow(/permission denied|append-only/i);
+  });
+
+  it("returns a verified receipt through the authenticated command boundary", async () => {
+    const org = uuid();
+    const userId = uuid();
+    const engagement = await createEngagement(org, { fixed: false });
+    const changeOrderId = uuid();
+    const idempotencyKey = uuid();
+
+    await appendTrusted(
+      org,
+      "change_order",
+      changeOrderId,
+      "change_order.requested",
+      {
+        engagement_id: engagement,
+        description: "Receipt boundary regression",
+        est_hours: 2,
+        est_fee: 500,
+      }
+    );
+
+    const [result] = await sql.begin(async (tx) => {
+      await tx`select set_config(
+        'request.jwt.claims',
+        ${JSON.stringify({
+          sub: userId,
+          role: "authenticated",
+          org_id: org,
+        })},
+        true
+      )`;
+
+      await tx`set local role authenticated`;
+
+      return tx`
+        select decide_change_order_with_receipt(
+          ${org}::uuid,
+          ${changeOrderId}::uuid,
+          'approve',
+          2::numeric,
+          500::numeric,
+          ${idempotencyKey}::uuid
+        ) as receipt
+      `;
+    });
+
+    const receipt = result.receipt;
+
+    expect(receipt).toBeTruthy();
+    expect(Number(receipt.seq)).toBeGreaterThan(0);
+    expect(receipt.event_id).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+    );
+    expect(receipt.hash).toBeTruthy();
+    expect(receipt.occurred_at).toBeTruthy();
+    expect(receipt.stream_type).toBe("change_order");
+    expect(receipt.stream_id).toBe(changeOrderId);
+    expect(receipt.event_type).toBe("change_order.decided");
+  });
+
+  it("denies authenticated direct reads from the events table", async () => {
+    const org = uuid();
+    const userId = uuid();
+
+    await createEngagement(org, { fixed: false });
+
+    await expect(
+      sql.begin(async (tx) => {
+        await tx`select set_config(
+          'request.jwt.claims',
+          ${JSON.stringify({
+            sub: userId,
+            role: "authenticated",
+            org_id: org,
+          })},
+          true
+        )`;
+
+        await tx`set local role authenticated`;
+
+        return tx`
+          select seq
+          from events
+          where org_id = ${org}::uuid
+          limit 1
+        `;
+      })
+    ).rejects.toThrow(/permission denied for table events/i);
+  });
+});
