@@ -169,7 +169,7 @@ export default async function Home() {
     await supabase.auth.getClaims();
 
   if (claimsError || !claimsData?.claims) {
-    redirect("/auth/demo?next=/");
+    redirect("/login?next=/");
   }
 
   const [

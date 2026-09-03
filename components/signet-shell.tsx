@@ -1,15 +1,25 @@
+"use client";
+
 import type { ReactNode } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   BriefcaseBusiness,
   FileCheck2,
   LayoutDashboard,
+  LogOut,
   ScrollText,
   ShieldCheck,
   TriangleAlert,
 } from "lucide-react";
+import { createClient } from "../lib/supabase/client";
 
-type Active = "command" | "engagements" | "signals" | "change-orders" | "trust-ledger";
+type Active =
+  | "command"
+  | "engagements"
+  | "signals"
+  | "change-orders"
+  | "trust-ledger";
 
 const nav = [
   { key: "command", href: "/", label: "Command Center", icon: LayoutDashboard },
@@ -28,6 +38,15 @@ export function SignetShell({
   crumb: string;
   children: ReactNode;
 }) {
+  const router = useRouter();
+
+  async function signOut() {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.replace("/login");
+    router.refresh();
+  }
+
   return (
     <div className="signet-shell">
       <aside className="sidebar">
@@ -39,6 +58,7 @@ export function SignetShell({
         <nav className="side-nav" aria-label="Primary">
           {nav.map((item) => {
             const Icon = item.icon;
+
             return (
               <Link
                 key={item.key}
@@ -56,11 +76,20 @@ export function SignetShell({
           <div className="kernel-status">
             <ShieldCheck size={22} strokeWidth={1.7} />
             <div>
-              <strong>Kernel verified</strong>
-              <span>10 / 10 tests passing</span>
+              <strong>Kernel online</strong>
+              <span>Verified event boundaries active</span>
             </div>
           </div>
-          <div className="profile-orb">N</div>
+
+          <button
+            type="button"
+            className="profile-orb"
+            onClick={signOut}
+            title="Sign out"
+            aria-label="Sign out"
+          >
+            <LogOut size={16} />
+          </button>
         </div>
       </aside>
 
@@ -71,11 +100,13 @@ export function SignetShell({
             <span>/</span>
             <strong>{crumb}</strong>
           </div>
+
           <div className="demo-state">
             <span className="demo-dot" />
-            Local demo state
+            Production
           </div>
         </header>
+
         {children}
       </main>
     </div>

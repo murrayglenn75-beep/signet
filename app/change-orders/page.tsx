@@ -74,7 +74,7 @@ export default async function ChangeOrdersPage() {
     await supabase.auth.getClaims();
 
   if (claimsError || !claimsData?.claims) {
-    redirect("/auth/demo");
+    redirect("/login?next=/change-orders");
   }
 
   const [

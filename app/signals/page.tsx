@@ -9,7 +9,12 @@ type SignalRow = {
   signal_id: string;
   stream_type: string;
   stream_id: string;
-  code: "OVER_BUDGET" | "SCOPE_DRIFT" | "STALE" | "UNBILLED" | "UNRECONCILED";
+  code:
+    | "OVER_BUDGET"
+    | "SCOPE_DRIFT"
+    | "STALE"
+    | "UNBILLED"
+    | "UNRECONCILED";
   severity: "amber" | "red";
   detail: Record<string, unknown>;
   evidence_seqs: Array<number | string>;
@@ -60,11 +65,13 @@ function describeSignal(signal: SignalRow) {
 
   switch (signal.code) {
     case "SCOPE_DRIFT":
-      return `Net fixed-fee scope is beyond tolerance: ${n(d.hours_logged).toFixed(
+      return `Net fixed-fee scope is beyond tolerance: ${n(
+        d.hours_logged
+      ).toFixed(1)}h logged, ${n(d.planned_hours).toFixed(
         1
-      )}h logged, ${n(d.planned_hours).toFixed(1)}h planned and ${n(
-        d.approved_co_hours
-      ).toFixed(1)}h explicitly approved.`;
+      )}h planned and ${n(d.approved_co_hours).toFixed(
+        1
+      )}h explicitly approved.`;
 
     case "OVER_BUDGET":
       return `Budget-line utilization is ${n(d.burn_pct).toFixed(
@@ -86,21 +93,32 @@ function describeSignal(signal: SignalRow) {
       ).toFixed(1)} days.`;
 
     case "UNRECONCILED":
-      return `Invoice total ${money(n(d.invoice_amount))} does not reconcile to line total ${money(
-        n(d.lines_sum)
-      )}.`;
+      return `Invoice total ${money(
+        n(d.invoice_amount)
+      )} does not reconcile to line total ${money(n(d.lines_sum))}.`;
   }
 }
 
-export default async function SignalsPage() {
+export default async function SignalsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ severity?: string }>;
+}) {
   const supabase = await createClient();
 
   const { data: claimsData, error: claimsError } =
     await supabase.auth.getClaims();
 
   if (claimsError || !claimsData?.claims) {
-    redirect("/auth/demo?next=/signals");
+    redirect("/login?next=/signals");
   }
+
+  const params = await searchParams;
+
+  const severityFilter =
+    params.severity === "red" || params.severity === "amber"
+      ? params.severity
+      : null;
 
   const [
     signalResult,
@@ -115,11 +133,18 @@ export default async function SignalsPage() {
       )
       .is("cleared_at", null)
       .order("computed_at", { ascending: false }),
-    supabase.from("proj_engagements").select("stream_id,name"),
+
+    supabase
+      .from("proj_engagements")
+      .select("stream_id,name"),
+
     supabase
       .from("proj_budget_lines")
       .select("stream_id,engagement_id,label"),
-    supabase.from("proj_invoices").select("stream_id,engagement_id"),
+
+    supabase
+      .from("proj_invoices")
+      .select("stream_id,engagement_id"),
   ]);
 
   const signals = (signalResult.data ?? []) as SignalRow[];
@@ -127,19 +152,28 @@ export default async function SignalsPage() {
   const budgetLines = (budgetLineResult.data ?? []) as BudgetLineRow[];
   const invoices = (invoiceResult.data ?? []) as InvoiceRow[];
 
+  const filteredSignals = severityFilter
+    ? signals.filter((signal) => signal.severity === severityFilter)
+    : signals;
+
   const engagementById = new Map(
-    engagements.map((row) => [row.stream_id, row.name ?? "Untitled engagement"])
+    engagements.map((row) => [
+      row.stream_id,
+      row.name ?? "Untitled engagement",
+    ])
   );
+
   const budgetById = new Map(
     budgetLines.map((row) => [row.stream_id, row])
   );
+
   const invoiceById = new Map(
     invoices.map((row) => [row.stream_id, row])
   );
 
   const evidenceSeqs = [
     ...new Set(
-      signals.flatMap((signal) =>
+      filteredSignals.flatMap((signal) =>
         (signal.evidence_seqs ?? []).map((seq) => String(seq))
       )
     ),
@@ -149,7 +183,10 @@ export default async function SignalsPage() {
   let ledgerError = false;
 
   if (evidenceSeqs.length > 0) {
-    const { data: ledgerData, error: ledgerQueryError } = await supabase.rpc("get_trust_ledger_evidence", { p_seqs: evidenceSeqs });
+    const { data: ledgerData, error: ledgerQueryError } =
+      await supabase.rpc("get_trust_ledger_evidence", {
+        p_seqs: evidenceSeqs,
+      });
 
     ledgerError = Boolean(ledgerQueryError);
 
@@ -163,20 +200,29 @@ export default async function SignalsPage() {
 
   function titleForSignal(signal: SignalRow) {
     if (signal.stream_type === "engagement") {
-      return engagementById.get(signal.stream_id) ?? `Engagement ${shortId(signal.stream_id)}`;
+      return (
+        engagementById.get(signal.stream_id) ??
+        `Engagement ${shortId(signal.stream_id)}`
+      );
     }
 
     if (signal.stream_type === "budget_line") {
       const budget = budgetById.get(signal.stream_id);
-      if (!budget) return `Budget line ${shortId(signal.stream_id)}`;
+
+      if (!budget) {
+        return `Budget line ${shortId(signal.stream_id)}`;
+      }
 
       const engagement =
-        engagementById.get(budget.engagement_id) ?? "Unknown engagement";
+        engagementById.get(budget.engagement_id) ??
+        "Unknown engagement";
+
       return `${engagement} / ${budget.label ?? "Budget line"}`;
     }
 
     if (signal.stream_type === "invoice") {
       const invoice = invoiceById.get(signal.stream_id);
+
       const engagement = invoice
         ? engagementById.get(invoice.engagement_id)
         : undefined;
@@ -189,7 +235,10 @@ export default async function SignalsPage() {
     return `${signal.stream_type} ${shortId(signal.stream_id)}`;
   }
 
-  const redCount = signals.filter((signal) => signal.severity === "red").length;
+  const redCount = signals.filter(
+    (signal) => signal.severity === "red"
+  ).length;
+
   const amberCount = signals.filter(
     (signal) => signal.severity === "amber"
   ).length;
@@ -204,69 +253,120 @@ export default async function SignalsPage() {
     <SignetShell active="signals" crumb="Signals">
       <div className="content">
         <section className="hero page-hero">
-          <div className="eyebrow">DETERMINISTIC RISK ENGINE · LIVE RLS DATA</div>
+          <div className="eyebrow">
+            DETERMINISTIC RISK ENGINE · LIVE RLS DATA
+          </div>
+
           <h1>Signals</h1>
+
           <p>
-            Every active alert is computed from operational state and carries
-            exact event evidence. No LLM creates, clears or changes a signal.
+            Every active alert is computed from operational state and
+            carries exact event evidence. No LLM creates, clears or
+            changes a signal.
           </p>
         </section>
 
         <div className="signal-toolbar">
           <div>
             <Radio size={16} />
-            <strong>{signals.length} active</strong>
+
+            <strong>{filteredSignals.length} active</strong>
+
             <span>
               {redCount} red · {amberCount} amber
             </span>
           </div>
-          <button title="Filter UI is presentation-only for now">
-            <Filter size={14} /> Filter
-          </button>
+
+          <div className="signal-filter-group">
+            <a
+              href="/signals"
+              className={`signal-filter-link ${
+                !severityFilter ? "active" : ""
+              }`}
+            >
+              <Filter size={14} />
+              All
+            </a>
+
+            <a
+              href="/signals?severity=red"
+              className={`signal-filter-link ${
+                severityFilter === "red" ? "active" : ""
+              }`}
+            >
+              Red
+            </a>
+
+            <a
+              href="/signals?severity=amber"
+              className={`signal-filter-link ${
+                severityFilter === "amber" ? "active" : ""
+              }`}
+            >
+              Amber
+            </a>
+          </div>
         </div>
 
         {readError ? (
           <section className="panel full-panel">
             <div style={{ padding: 28 }}>
-              <div className="danger-text">Unable to read live signal data.</div>
+              <div className="danger-text">
+                Unable to read live signal data.
+              </div>
+
               <p className="panel-note" style={{ marginTop: 8 }}>
                 Signet will not substitute hard-coded demo signals.
               </p>
             </div>
           </section>
-        ) : signals.length === 0 ? (
+        ) : filteredSignals.length === 0 ? (
           <section className="panel full-panel">
             <div style={{ padding: 32 }}>
-              <div className="engagement-name">No active signals</div>
+              <div className="engagement-name">
+                {severityFilter
+                  ? `No ${severityFilter} signals`
+                  : "No active signals"}
+              </div>
+
               <p className="panel-note" style={{ marginTop: 8 }}>
-                The deterministic signal engine currently has no amber or red
-                exceptions for this organization.
+                {severityFilter
+                  ? `There are currently no ${severityFilter} signals for this organization.`
+                  : "The deterministic signal engine currently has no amber or red exceptions for this organization."}
               </p>
             </div>
           </section>
         ) : (
           <section className="signal-card-grid">
-            {signals.map((signal) => (
+            {filteredSignals.map((signal) => (
               <article
                 className={`evidence-card ${signal.severity}`}
                 key={signal.signal_id}
               >
                 <div className="evidence-head">
                   <div>
-                    <span className={`signal-dot ${signal.severity}`} />
+                    <span
+                      className={`signal-dot ${signal.severity}`}
+                    />
+
                     <strong>{signal.code}</strong>
                   </div>
-                  <span className={`risk-pill ${signal.severity}`}>
+
+                  <span
+                    className={`risk-pill ${signal.severity}`}
+                  >
                     {signal.severity.toUpperCase()}
                   </span>
                 </div>
 
                 <h2>{titleForSignal(signal)}</h2>
+
                 <p>{describeSignal(signal)}</p>
 
                 <div className="evidence-block">
                   <div className="evidence-label">
-                    <ShieldCheck size={13} /> Evidence chain
+                    <ShieldCheck size={13} />
+                    Evidence chain
                   </div>
 
                   {(signal.evidence_seqs ?? []).length === 0 ? (
@@ -280,8 +380,12 @@ export default async function SignalsPage() {
                       const eventType = evidenceBySeq.get(key);
 
                       return (
-                        <div className="evidence-event" key={key}>
+                        <div
+                          className="evidence-event"
+                          key={key}
+                        >
                           <CircleDot size={11} />
+
                           <span>
                             #{key}
                             {eventType ? ` ${eventType}` : ""}
@@ -294,7 +398,11 @@ export default async function SignalsPage() {
                   {ledgerError ? (
                     <div className="evidence-event">
                       <CircleDot size={11} />
-                      <span>Ledger event labels unavailable; sequence evidence preserved.</span>
+
+                      <span>
+                        Ledger event labels unavailable; sequence
+                        evidence preserved.
+                      </span>
                     </div>
                   ) : null}
                 </div>

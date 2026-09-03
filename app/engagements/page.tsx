@@ -1,5 +1,4 @@
 import {
-  ArrowUpRight,
   BriefcaseBusiness,
   Clock3,
   TrendingUp,
@@ -42,7 +41,9 @@ function money(value: number) {
 }
 
 function pct(value: number | null) {
-  return value === null || !Number.isFinite(value) ? "—" : `${value.toFixed(1)}%`;
+  return value === null || !Number.isFinite(value)
+    ? "—"
+    : `${value.toFixed(1)}%`;
 }
 
 function modelLabel(model: EngagementRow["fee_model"]) {
@@ -60,8 +61,15 @@ function rowMetrics(row: EngagementRow) {
   const logged = n(row.hours_logged);
   const capacity = plannedHours + approvedHours;
 
-  const margin = fee > 0 ? ((fee - cost) / fee) * 100 : null;
-  const burn = capacity > 0 ? (logged / capacity) * 100 : null;
+  const margin =
+    fee > 0
+      ? ((fee - cost) / fee) * 100
+      : null;
+
+  const burn =
+    capacity > 0
+      ? (logged / capacity) * 100
+      : null;
 
   let risk = "Clear";
   let tone = "clear";
@@ -77,7 +85,12 @@ function rowMetrics(row: EngagementRow) {
     tone = "amber";
   }
 
-  return { margin, burn, risk, tone };
+  return {
+    margin,
+    burn,
+    risk,
+    tone,
+  };
 }
 
 export default async function EngagementsPage() {
@@ -87,7 +100,7 @@ export default async function EngagementsPage() {
     await supabase.auth.getClaims();
 
   if (claimsError || !claimsData?.claims) {
-    redirect("/auth/demo?next=/engagements");
+    redirect("/login?next=/engagements");
   }
 
   const { data, error } = await supabase
@@ -101,42 +114,81 @@ export default async function EngagementsPage() {
   const rows = (data ?? []) as EngagementRow[];
 
   const activeClients = new Set(
-    rows.map((row) => row.client).filter((client): client is string => Boolean(client))
+    rows
+      .map((row) => row.client)
+      .filter(
+        (client): client is string =>
+          Boolean(client)
+      )
   ).size;
 
-  const totalFee = rows.reduce((sum, row) => sum + n(row.fee_amount), 0);
-  const totalCost = rows.reduce((sum, row) => sum + n(row.cost_accrued), 0);
-  const weightedMargin =
-    totalFee > 0 ? ((totalFee - totalCost) / totalFee) * 100 : null;
-
-  const totalUnbilled = rows.reduce(
-    (sum, row) => sum + n(row.unbilled_amount),
+  const totalFee = rows.reduce(
+    (sum, row) =>
+      sum + n(row.fee_amount),
     0
   );
-  const exposedCount = rows.filter((row) => n(row.unbilled_amount) > 0).length;
+
+  const totalCost = rows.reduce(
+    (sum, row) =>
+      sum + n(row.cost_accrued),
+    0
+  );
+
+  const weightedMargin =
+    totalFee > 0
+      ? ((totalFee - totalCost) / totalFee) * 100
+      : null;
+
+  const totalUnbilled = rows.reduce(
+    (sum, row) =>
+      sum + n(row.unbilled_amount),
+    0
+  );
+
+  const exposedCount = rows.filter(
+    (row) =>
+      n(row.unbilled_amount) > 0
+  ).length;
 
   return (
-    <SignetShell active="engagements" crumb="Engagements">
+    <SignetShell
+      active="engagements"
+      crumb="Engagements"
+    >
       <div className="content">
         <section className="hero page-hero">
-          <div className="eyebrow">OPERATING PORTFOLIO · LIVE RLS DATA</div>
+          <div className="eyebrow">
+            OPERATING PORTFOLIO · LIVE RLS DATA
+          </div>
+
           <h1>Engagements</h1>
+
           <p>
             Commercial state rebuilt from the append-only event stream.
-            Margin, burn and billing exposure are calculated from authenticated,
-            org-scoped deterministic projections.
+            Margin, burn and billing exposure are calculated from
+            authenticated, org-scoped deterministic projections.
           </p>
         </section>
 
         <section className="metrics page-metrics">
           <article className="metric-card">
             <div>
-              <div className="metric-label">Active engagements</div>
-              <div className="metric-value">{rows.length}</div>
+              <div className="metric-label">
+                Active engagements
+              </div>
+
+              <div className="metric-value">
+                {rows.length}
+              </div>
+
               <div className="metric-meta">
-                Across {activeClients} {activeClients === 1 ? "client" : "clients"}
+                Across {activeClients}{" "}
+                {activeClients === 1
+                  ? "client"
+                  : "clients"}
               </div>
             </div>
+
             <div className="metric-icon">
               <BriefcaseBusiness size={24} />
             </div>
@@ -144,10 +196,19 @@ export default async function EngagementsPage() {
 
           <article className="metric-card">
             <div>
-              <div className="metric-label">Average margin</div>
-              <div className="metric-value">{pct(weightedMargin)}</div>
-              <div className="metric-meta">Portfolio weighted by fee</div>
+              <div className="metric-label">
+                Average margin
+              </div>
+
+              <div className="metric-value">
+                {pct(weightedMargin)}
+              </div>
+
+              <div className="metric-meta">
+                Portfolio weighted by fee
+              </div>
             </div>
+
             <div className="metric-icon">
               <TrendingUp size={24} />
             </div>
@@ -155,12 +216,22 @@ export default async function EngagementsPage() {
 
           <article className="metric-card">
             <div>
-              <div className="metric-label">Unbilled exposure</div>
-              <div className="metric-value amber">{money(totalUnbilled)}</div>
+              <div className="metric-label">
+                Unbilled exposure
+              </div>
+
+              <div className="metric-value amber">
+                {money(totalUnbilled)}
+              </div>
+
               <div className="metric-meta">
-                Across {exposedCount} {exposedCount === 1 ? "engagement" : "engagements"}
+                Across {exposedCount}{" "}
+                {exposedCount === 1
+                  ? "engagement"
+                  : "engagements"}
               </div>
             </div>
+
             <div className="metric-icon amber">
               <Clock3 size={24} />
             </div>
@@ -173,22 +244,39 @@ export default async function EngagementsPage() {
               <BriefcaseBusiness size={17} />
               <span>Engagement portfolio</span>
             </div>
-            <span className="panel-note">Supabase · RLS · deterministic projection</span>
+
+            <span className="panel-note">
+              Supabase · RLS · deterministic projection
+            </span>
           </div>
 
           {error ? (
             <div style={{ padding: "28px" }}>
-              <div className="danger-text">Unable to read engagement projection.</div>
-              <p className="panel-note" style={{ marginTop: 8 }}>
-                The authenticated query was denied or the local database is unavailable.
+              <div className="danger-text">
+                Unable to read engagement projection.
+              </div>
+
+              <p
+                className="panel-note"
+                style={{ marginTop: 8 }}
+              >
+                The authenticated query was denied or the database
+                is unavailable.
               </p>
             </div>
           ) : rows.length === 0 ? (
             <div style={{ padding: "32px" }}>
-              <div className="engagement-name">No live engagements yet</div>
-              <p className="panel-note" style={{ marginTop: 8 }}>
-                The UI is connected to Supabase successfully. Add events for this
-                organization and the deterministic projection will appear here.
+              <div className="engagement-name">
+                No live engagements yet
+              </div>
+
+              <p
+                className="panel-note"
+                style={{ marginTop: 8 }}
+              >
+                The UI is connected to Supabase successfully. Add
+                events for this organization and the deterministic
+                projection will appear here.
               </p>
             </div>
           ) : (
@@ -203,9 +291,9 @@ export default async function EngagementsPage() {
                     <th>Burn</th>
                     <th>Unbilled</th>
                     <th>Risk</th>
-                    <th></th>
                   </tr>
                 </thead>
+
                 <tbody>
                   {rows.map((row) => {
                     const metrics = rowMetrics(row);
@@ -215,11 +303,25 @@ export default async function EngagementsPage() {
                         <td className="engagement-name">
                           {row.name ?? "Untitled engagement"}
                         </td>
-                        <td>{row.client ?? "—"}</td>
-                        <td>{modelLabel(row.fee_model)}</td>
-                        <td className={metrics.tone === "red" ? "danger-text" : ""}>
+
+                        <td>
+                          {row.client ?? "—"}
+                        </td>
+
+                        <td>
+                          {modelLabel(row.fee_model)}
+                        </td>
+
+                        <td
+                          className={
+                            metrics.tone === "red"
+                              ? "danger-text"
+                              : ""
+                          }
+                        >
                           {pct(metrics.margin)}
                         </td>
+
                         <td
                           className={
                             metrics.tone === "red"
@@ -231,14 +333,17 @@ export default async function EngagementsPage() {
                         >
                           {pct(metrics.burn)}
                         </td>
-                        <td>{money(n(row.unbilled_amount))}</td>
+
                         <td>
-                          <span className={`risk-pill ${metrics.tone}`}>
+                          {money(n(row.unbilled_amount))}
+                        </td>
+
+                        <td>
+                          <span
+                            className={`risk-pill ${metrics.tone}`}
+                          >
                             {metrics.risk}
                           </span>
-                        </td>
-                        <td>
-                          <ArrowUpRight size={14} className="row-action" />
                         </td>
                       </tr>
                     );
