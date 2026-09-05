@@ -1,29 +1,22 @@
-Signet
+# Signet
 
-Verified operations infrastructure for service firms.
+**Verified operations infrastructure for service firms.**
 
-Signet is a production-style operations control system built around a verified event kernel.
+Signet is a production-style operations control system built around an append-only event kernel, deterministic business logic, authenticated security boundaries, tamper-evident operational evidence, and a constrained read-only AI narration layer.
 
-Instead of giving an LLM authority over business state, Signet establishes operational truth first through authenticated events, deterministic projections, explicit commercial decisions, and evidence-backed signals. AI is placed downstream as a read-only narration layer.
+**Live application:** https://signet-chi.vercel.app
 
-Truth → state → judgment → enforcement → proof → narration.
+**Repository:** https://github.com/murrayglenn75-beep/signet
 
-Live application
+---
 
-Production: https://signet-chi.vercel.app
+## What Signet is
 
-The production deployment uses authenticated Supabase access and intentionally starts with an empty operational dataset unless events are recorded through the controlled event-kernel boundaries.
+Most AI-enabled operational systems start by giving the model access to business data and then asking it to decide what should happen.
 
-Why Signet exists
+Signet takes the opposite approach.
 
-Operational systems increasingly add AI before establishing trustworthy state.
-
-That creates a risky architecture:
-
-user input → LLM → operational action
-
-Signet reverses that model:
-
+```text
 authenticated event
         ↓
 deterministic state
@@ -35,204 +28,432 @@ policy / authority gate
 verified evidence
         ↓
 AI explanation
+```
 
-The LLM can explain what the system knows. It does not decide what is true.
+The system establishes operational truth before AI is allowed to participate.
 
-What Signet does
+The LLM can explain what the system knows.
 
-Signet turns service-delivery operations into a verifiable system of record:
+It cannot decide what is true.
 
-tracks engagements, budget consumption, time, invoices, and change orders
+---
 
-maintains an append-only operational event stream
+## Why I built it
 
-hash-chains events to make tampering detectable
+Service businesses often operate across disconnected project, time, budget, invoice, and commercial-decision systems.
 
-computes portfolio state through deterministic projections
+That creates problems such as:
 
-detects margin and delivery risk without LLM judgment
+- scope expanding without commercial approval
+- budget overruns being noticed too late
+- invoices not reconciling with underlying work
+- operational decisions losing their evidence trail
+- dashboards showing state without explaining where it came from
+- AI being given more authority than the underlying data deserves
 
-blocks silent fixed-fee scope overrun behind an explicit change-order gate
+Signet treats those as **systems and authority problems**, not prompting problems.
 
-records approve / absorb / decline decisions as immutable events
+The architecture is designed around one principle:
 
-returns verified receipts for sensitive write operations
+> **Truth first. AI second.**
 
-links risk findings to exact evidence events
+---
 
-isolates organizations through authenticated JWT claims and database boundaries
+## Product
 
-restricts AI to approved read-only evidence
+### Command Center
 
-exposes a bounded Trust Ledger without granting browser access to raw event payloads
+The Command Center provides a portfolio-level operational view including:
 
-Product views
+- portfolio margin
+- revenue at risk
+- unbilled exposure
+- active engagements
+- engagement health
+- deterministic risk signals
+- evidence-backed AI narration
+- Trust Ledger status
 
-Command Center
+No model is used to calculate the underlying operational state.
 
-Portfolio-level operating view showing active engagements, portfolio margin, revenue at risk, unbilled exposure, engagement health, active signals, deterministic evidence narration, and ledger status.
+---
 
-Engagements
+### Engagements
 
-Commercial state reconstructed from authenticated Supabase projections, including fee model, margin, budget burn, unbilled exposure, scope risk, and active-client portfolio metrics.
+Engagement state is reconstructed from authenticated operational events and deterministic projections.
 
-Signals
+The view includes:
 
-Deterministic operating-risk findings with red / amber severity, server-side severity filtering, evidence references, engagement context, and deterministic signal state.
+- client
+- fee model
+- planned hours
+- approved scope
+- hours consumed
+- margin
+- budget burn
+- unbilled exposure
+- commercial health
+- active risk state
 
-Change Orders
+---
 
-Explicit commercial authority for fixed-fee scope changes with approve / absorb / decline decisions, idempotent command execution, concurrency-safe gate evaluation, and verified immutable event receipts.
+### Signals
 
-Trust Ledger
+Risk detection is deterministic.
 
-Authenticated, organization-scoped operational evidence exposing event sequence, event type, actor type, stream identity, event hash, chain window, and bounded metadata-only browser access.
+Current signal types include conditions such as:
 
-The browser does not receive raw ledger payloads through this view.
+- budget exhaustion
+- budget pressure
+- unreconciled financial state
 
-Routes
+Signals contain:
 
-/
-├── /login
-├── /engagements
-├── /signals
-├── /change-orders
-└── /trust-ledger
+- severity
+- signal code
+- affected operational stream
+- deterministic detail
+- exact evidence sequence references
+- calculation timestamp
 
-A local-only /auth/demo route exists for development and is disabled in production.
+The LLM cannot create, modify, escalate, or clear a signal.
 
-Architecture
+---
 
-                        ┌──────────────────────┐
-                        │      Next.js UI      │
-                        │  authenticated user  │
-                        └──────────┬───────────┘
-                                   │
-                                   ▼
-                        ┌──────────────────────┐
-                        │ Command / RPC layer  │
-                        │ auth + org boundary  │
-                        └──────────┬───────────┘
-                                   │
-                                   ▼
-┌───────────────────────────────────────────────────────────┐
-│                    PostgreSQL Event Kernel                │
-│  Append-only events                                      │
-│  SHA-256 hash chain                                      │
-│  Per-organization chain heads                            │
-│  Authenticated actor binding                             │
-│  Idempotent commands                                     │
-│  Fixed-fee scope enforcement                             │
-└──────────────┬────────────────┬────────────────┬───────────┘
-               │                │                │
-               ▼                ▼                ▼
-        Projections       Deterministic      Trust Ledger
-                             Signals
-               │                │                │
-               └────────────────┴─────────┬──────┘
-                                          ▼
-                                Approved evidence
-                                          │
-                                          ▼
-                                   AI Narrator
-                                    read-only
+### Change Orders
 
-The event stream is the operational source of truth. Projections, signals, receipts, and ledger evidence are derived from controlled event boundaries.
+Fixed-fee scope expansion is protected behind an explicit commercial authority boundary.
 
-Core invariants
+A change order can be:
 
-Events are append-only. Application flows do not update or delete historical operational events.
+- approved
+- absorbed
+- declined
 
-State is deterministic. Projection state is reconstructed from known event transitions.
+Decisions pass through an idempotent command path that handles:
 
-Signals are deterministic. The LLM cannot create, modify, or clear operating-risk signals.
+- authenticated identity
+- organization scope
+- duplicate requests
+- conflicting decisions
+- concurrency
+- event creation
+- immutable receipts
 
-Evidence is explicit. Signals reference exact event sequences rather than model confidence.
+A successful decision produces a verified event receipt.
 
-Identity is server-bound. Organization and actor identity come from authenticated context rather than caller-supplied authority.
+---
 
-Scope authority is explicit. Fixed-fee scope expansion requires a valid commercial decision.
+### Trust Ledger
 
-Sensitive commands are idempotent. Retried requests cannot silently create duplicate commercial decisions.
+The Trust Ledger exposes authenticated operational evidence without giving the browser unrestricted access to raw event payloads.
 
-Concurrency is considered. Concurrent fixed-fee entries cannot jointly bypass the scope gate under the tested model.
+It provides bounded metadata including:
 
-AI has no operational authority. AI receives approved evidence for narration only.
+- event sequence
+- event ID
+- event type
+- stream identity
+- actor type
+- timestamp
+- previous hash
+- current event hash
 
-Corrections use new events. Historical operational truth is not silently rewritten.
+The operational event chain is **tamper-evident**, not claimed to be universally tamper-proof.
 
-Security model
+---
 
-Signet uses multiple boundaries instead of relying on the frontend for security.
+## Public demo workspace
 
-Authentication
+The production application includes an isolated read-only demo workspace.
 
-Production uses Supabase email/password authentication. Protected pages redirect unauthenticated users to /login. Production users are administrator-provisioned, and public signup is intentionally not exposed in the current single-tenant phase.
+Select:
 
-Organization boundary
+**Enter demo workspace**
 
-Authenticated JWTs carry an org_id claim produced by a Supabase Custom Access Token Hook. Database reads and RPC operations use this claim to establish organization scope.
+from the login screen.
 
-Write boundary
+The demo uses real Supabase authentication rather than a frontend authentication bypass.
+
+The server performs the demo login using environment-managed credentials, then verifies that the resulting authenticated identity contains the expected protected claims.
+
+The demo workspace has its own organization identity:
+
+```text
+production organization
+        ≠
+demo organization
+```
+
+The database boundary prevents authenticated demo users from writing operational events or commercial commands.
+
+The demo therefore allows exploration of:
+
+- Command Center
+- engagement state
+- deterministic signals
+- change orders
+- Trust Ledger
+- AI narration
+
+without granting authority to change the seeded operational state.
+
+---
+
+## Architecture
+
+```mermaid
+flowchart TD
+    UI["Next.js UI<br/>Authenticated user"]
+
+    AUTH["Supabase Auth<br/>JWT + protected org claim"]
+
+    API["Server / RPC boundary<br/>Authentication + organization scope"]
+
+    EVENTS["PostgreSQL Event Kernel<br/>Append-only events<br/>SHA-256 hash chain<br/>Idempotent commands"]
+
+    PROJ["Deterministic<br/>Projections"]
+
+    SIGNALS["Deterministic<br/>Signals"]
+
+    POLICY["Commercial /<br/>Authority Gates"]
+
+    LEDGER["Trust Ledger"]
+
+    EVIDENCE["Approved<br/>Evidence"]
+
+    AI["AI Narrator<br/>Read-only"]
+
+    UI --> AUTH
+    AUTH --> API
+    API --> EVENTS
+
+    EVENTS --> PROJ
+    EVENTS --> SIGNALS
+    EVENTS --> POLICY
+    EVENTS --> LEDGER
+
+    PROJ --> EVIDENCE
+    SIGNALS --> EVIDENCE
+    LEDGER --> EVIDENCE
+
+    EVIDENCE --> AI
+    AI --> UI
+```
+
+The event stream is the operational source of truth.
+
+Projections, signals, receipts, commercial decisions, ledger evidence, and AI narration are downstream of controlled event boundaries.
+
+---
+
+## Event kernel
+
+Operational mutations are expressed as events rather than silent state replacement.
+
+Examples include:
+
+```text
+engagement.created
+budget_line.created
+time_entry.logged
+invoice.drafted
+change_order.requested
+change_order.decided
+```
+
+Historical operational events are append-only under normal application flows.
+
+Corrections are represented by new events rather than rewriting previous operational history.
+
+---
+
+## Core invariants
+
+### Events are append-only
+
+Application workflows do not update or delete historical operational events.
+
+### State is deterministic
+
+Projection state is calculated from known event transitions.
+
+### Signals are deterministic
+
+Operational risk is computed by system logic rather than model judgment.
+
+### Evidence is explicit
+
+Signals point to exact event sequences.
+
+### Identity is server-bound
+
+Organization and actor identity are derived from authenticated context rather than trusted caller input.
+
+### Commercial authority is explicit
+
+Fixed-fee scope expansion cannot silently bypass the change-order boundary.
+
+### Sensitive commands are idempotent
+
+Retries cannot silently create duplicate commercial decisions.
+
+### Concurrency is considered
+
+Conflicting commercial operations are serialized or rejected under the implemented command model.
+
+### AI has no operational authority
+
+AI receives approved evidence for explanation only.
+
+---
+
+## Security architecture
+
+Signet uses layered trust boundaries rather than depending on frontend checks.
+
+### Authentication
+
+Production authentication uses Supabase Auth.
+
+Protected application routes require an authenticated session.
+
+Public self-registration is intentionally not exposed.
+
+---
+
+### Organization boundary
+
+Authenticated JWTs contain an organization claim generated through a Supabase Custom Access Token Hook.
+
+The database uses this authenticated organization identity to scope reads and protected RPC operations.
+
+The client does not get to choose its organization authority.
+
+---
+
+### Demo isolation
+
+The demo user receives protected authentication metadata identifying:
+
+```text
+demo_mode = true
+```
+
+and the dedicated demo organization.
+
+Database-side protection rejects operational writes from demo-authenticated identities.
+
+This means read-only demo behavior is not dependent only on disabled frontend controls.
+
+---
+
+### Write boundary
 
 Operational writes are performed through controlled database functions rather than unrestricted client table writes.
 
-The boundary enforces:
+The boundary covers:
 
-authenticated sessions
+- authentication
+- organization binding
+- actor binding
+- caller identity anti-spoofing
+- cross-organization reference protection
+- commercial policy enforcement
+- command idempotency
 
-organization binding
+---
 
-actor binding
+### Change-order command boundary
 
-caller identity anti-spoofing
+Change-order decisions use a dedicated idempotent command path.
 
-cross-organization reference protection
+The system:
 
-commercial scope policy
+1. accepts the command
+2. binds it to authenticated context
+3. reserves the idempotency key
+4. serializes conflicting decisions
+5. rejects conflicting key reuse
+6. executes the event-kernel operation
+7. returns a verified receipt
 
-command idempotency
+Safe retries return the original operation rather than generating silent duplicates.
 
-Change-order command boundary
+---
 
-Change-order decisions use a dedicated idempotent command path. The system reserves an idempotency key, serializes conflicting decisions, rejects conflicting reuse, returns the original sequence for safe retries, and writes the resulting decision through the event kernel.
+### Verified receipts
 
-Verified receipt boundary
+Sensitive commands can return a receipt containing:
 
-Sensitive change-order commands can return a verified receipt containing sequence, event ID, event hash, occurrence timestamp, stream type, stream ID, and event type.
+- event sequence
+- event ID
+- event hash
+- occurred-at timestamp
+- stream type
+- stream ID
+- event type
 
-The browser does not need unrestricted access to the underlying events table to verify that the command produced a recorded event.
+The browser therefore does not require direct unrestricted access to the underlying operational event table to confirm that an operation was recorded.
 
-Trust Ledger boundary
+---
 
-The browser Trust Ledger uses a bounded authenticated RPC and returns ledger metadata only: sequence, event ID, stream identity, event type, actor identity, timestamps, previous hash, and current hash.
+## Tamper-evident ledger
 
-Raw event payloads remain outside this browser boundary.
+Each operational event participates in a PostgreSQL SHA-256 hash chain.
 
-Tamper evidence
+Conceptually:
 
-Each event participates in a PostgreSQL SHA-256 hash chain.
-
+```text
 event[n].hash =
 SHA256(
-  previous_hash
-  + canonical event data
+    previous_hash
+    +
+    canonical_event_data
 )
+```
 
-This allows unexpected changes to historical event state to become detectable under the tested application model.
+Each organization maintains its own chain state.
 
-Signet describes this as tamper-evident, not tamper-proof. A malicious database administrator or infrastructure owner remains outside the current trust model.
+Unexpected modification to historical event material can therefore invalidate subsequent chain expectations under the implemented trust model.
 
-Potential future hardening includes independently signed checkpoints, external WORM storage, third-party timestamping, and cross-system hash anchoring.
+Signet deliberately describes this mechanism as **tamper-evident** rather than tamper-proof.
 
-AI boundary
+A malicious database administrator or compromised infrastructure owner remains outside the current trust boundary.
 
-AI is intentionally downstream of authority.
+Potential future hardening could include:
 
-The narrator can explain why a signal exists, which evidence supports it, what operational condition triggered it, and what human decision may be required.
+- independently signed checkpoints
+- external WORM storage
+- trusted timestamping
+- third-party hash anchoring
+- cross-system verification
 
-It does not determine financial truth, authorize commercial scope, mutate operational state, modify projections, create or clear signals, or become the system of record.
+---
 
+## AI boundary
+
+AI is downstream of authority.
+
+The narrator may explain:
+
+- why a signal exists
+- which condition triggered it
+- which evidence supports it
+- which engagement is affected
+- what operational attention may be required
+
+It does not:
+
+- determine financial truth
+- authorize scope
+- mutate operational state
+- modify projections
+- create signals
+- clear signals
+- act as the system of record
+
+```text
 deterministic state
         ↓
 deterministic signal
@@ -240,265 +461,346 @@ deterministic signal
 approved evidence
         ↓
 AI explanation
+```
 
-This is the central architectural principle behind Signet.
+This separation is a core architectural property of Signet.
 
-Technology
+---
 
-Application
+## Technology
 
-Next.js 16
+### Application
 
-React
+- Next.js 16
+- React
+- TypeScript
+- Lucide React
+- Vercel
 
-TypeScript
+### Data and authentication
 
-Lucide React
+- Supabase
+- PostgreSQL
+- Supabase Auth
+- Row Level Security
+- PostgreSQL RPC
+- SECURITY DEFINER functions
+- Custom Access Token Hook
 
-Vercel
+### Event and security kernel
 
-Data and authentication
+- append-only event architecture
+- SHA-256
+- pgcrypto
+- per-organization hash chains
+- deterministic reducers
+- deterministic signal computation
+- authenticated JWT claims
+- idempotency keys
+- evidence-scoped RPC boundaries
 
-Supabase
+### Automation and verification
 
-PostgreSQL
+- pg_cron
+- Vitest 4
+- GitHub Actions
+- Supabase CLI
+- Docker
 
-Supabase Auth
+---
 
-Row Level Security
+## Verification
 
-PostgreSQL RPC / SECURITY DEFINER functions
+Current automated test result:
 
-Event and security kernel
+```text
+Test Files  5 passed (5)
+Tests       29 passed (29)
+```
 
-SHA-256
+The test suite covers areas including:
 
-pgcrypto
+- acceptance behavior
+- authenticated identity enforcement
+- organization isolation
+- security hardening
+- fixed-fee scope enforcement
+- change-order idempotency
+- concurrency-sensitive command behavior
+- Trust Ledger access boundaries
+- verified command receipts
+- demo authentication boundaries
 
-append-only event architecture
+The current production application also passes the production Next.js build.
 
-deterministic reducers
+The CI workflow is configured to run:
 
-idempotency keys
-
-authenticated JWT claims
-
-evidence-scoped RPC boundaries
-
-Automation and verification
-
-pg_cron
-
-Vitest 4
-
-GitHub Actions
-
-Supabase CLI
-
-Docker
-
-Verification
-
-Current automated verification:
-
-Test files:       5 passed
-Tests:           29 passed
-Production build: PASS
-TypeScript:       PASS
-GitHub CI:        PASS
-
-The test suite covers acceptance behavior, security hardening, change-order idempotency, Trust Ledger boundaries, demo-auth boundaries, authenticated identity enforcement, cross-organization protection, fixed-fee gate behavior, and verified command receipts.
-
-GitHub Actions runs:
-
+```bash
 npm ci
 npx supabase start
 npx supabase db reset
 npm test
 npm run build
+```
 
-The latest production-auth and Trust Ledger commit passed CI on main.
+---
 
-Local development
+## Application routes
 
-Prerequisites:
+```text
+/
+├── /login
+├── /engagements
+├── /signals
+├── /change-orders
+├── /trust-ledger
+└── /auth/demo
+```
 
-Node.js 22+
+`/auth/demo` performs a real server-side demo authentication flow and is available in the production deployment.
 
-Docker Desktop
+---
 
-Supabase CLI
+## Local development
+
+### Prerequisites
+
+- Node.js 22+
+- Docker Desktop
+- Supabase CLI
 
 Install dependencies:
 
+```bash
 npm install
+```
 
 Start local Supabase:
 
+```bash
 npx supabase start
+```
 
-Reset the local database and apply all migrations:
+Reset the local database and apply migrations:
 
+```bash
 npx supabase db reset
+```
 
-Create .env.local with your own Supabase development values:
+Create:
 
+```text
+.env.local
+```
+
+with your own development configuration:
+
+```env
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
+```
 
-Do not commit .env.local.
+Do not commit `.env.local`.
 
-Run Signet:
+Start the application:
 
+```bash
 npm run dev
+```
 
 Open:
 
+```text
 http://localhost:3000
+```
 
 Run verification:
 
+```bash
 npm test
 npm run build
 git diff --check
+```
 
-Production authentication
+---
 
-The production deployment uses administrator-provisioned Supabase users. The current architecture deliberately does not expose public self-registration.
+## Production configuration
 
-The production Supabase project also requires the Custom Access Token Hook:
+The Vercel application requires public Supabase configuration:
 
-public.custom_access_token_hook
-
-This adds the organization claim consumed by authenticated database boundaries.
-
-After changing the hook configuration, existing users must sign out and sign back in to receive a newly minted JWT.
-
-Database migrations
-
-The repository contains the full migration history under:
-
-supabase/migrations/
-
-The migration set includes the original event kernel plus later production hardening for authenticated identity binding, organization-scoped access, change-order idempotency, verified event receipts, Trust Ledger RPC boundaries, browser-safe Trust Ledger windows, and production security advisor remediation.
-
-Production migration history note
-
-The final production migrations were applied through the Supabase management API because the local network could not establish the required direct IPv4 CLI database connection.
-
-As a result, some production migration ledger timestamps differ from the local migration filenames.
-
-Before a future production supabase db push:
-
-compare migration names and contents
-
-inspect remote migration history
-
-repair migration-history metadata if required
-
-do not blindly replay equivalent production migrations
-
-The migration SQL in this repository remains the intended source-controlled implementation.
-
-Deployment
-
-Application
-
-Production is deployed through Vercel:
-
-https://signet-chi.vercel.app
-
-Required Vercel environment variables:
-
+```text
 NEXT_PUBLIC_SUPABASE_URL
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+```
 
-No Supabase service-role key is required by the browser application.
+The demo authentication route also uses server-side environment configuration:
 
-Database
+```text
+DEMO_EMAIL
+DEMO_PASSWORD
+```
 
-Production database infrastructure is hosted on Supabase.
+These values remain server-side.
 
-The production database may intentionally contain zero operational events after deployment. That is a valid empty production state, not demo-data failure.
+The application does not expose the demo password in browser source.
 
-Any future portfolio/demo seed data should be introduced through the event-kernel command boundaries rather than by directly inserting into projection tables.
+A Supabase service-role credential is not required by the browser application.
 
-Recovery principles
+---
 
-If rebuilding the application environment:
+## Database migrations
 
-provision Supabase
+The complete migration history is stored under:
 
-apply the migration history
+```text
+supabase/migrations/
+```
 
-configure the Custom Access Token Hook
+The migration set contains the original event kernel and subsequent production hardening for areas including:
 
-provision an authenticated user
+- event append boundaries
+- deterministic projections
+- deterministic signals
+- authenticated identity binding
+- organization-scoped access
+- Custom Access Token Hook claims
+- change-order enforcement
+- idempotent commands
+- verified event receipts
+- Trust Ledger RPC boundaries
+- browser-safe ledger windows
+- demo workspace authentication
+- demo workspace read-only enforcement
+- demo operational seed state
 
-configure Vercel public Supabase environment variables
+---
 
-deploy the Next.js application
+## Production migration history
 
-sign in and verify organization claims
+Some production migrations were applied through the Supabase management path when the local environment could not establish the required direct database connection.
 
-verify protected RPC boundaries
+Because of this, production migration ledger timestamps may differ from local migration filenames.
 
-run the GitHub CI suite
+Before a future production migration push:
 
-only introduce data through controlled operational boundaries
+1. compare local migration names and contents
+2. inspect remote migration history
+3. repair migration-history metadata if required
+4. avoid blindly replaying equivalent production migrations
 
-Current scope
+The SQL files in this repository remain the source-controlled implementation.
 
-Signet is a portfolio/reference implementation of a security-conscious operations kernel.
+---
 
-It demonstrates production-oriented engineering patterns, but it is not presented as formal verification, universal tamper resistance, enterprise compliance certification, cryptographic protection from a malicious infrastructure owner, independently audited financial controls, or proof of arbitrary multi-tenant SaaS isolation.
+## Recovery principles
 
-The architecture and security claims should be interpreted within the behavior covered by the implementation and automated tests.
+If rebuilding the environment:
 
-Engineering decisions demonstrated
+```text
+Provision Supabase
+        ↓
+Apply migration history
+        ↓
+Configure Custom Access Token Hook
+        ↓
+Provision authenticated identities
+        ↓
+Configure environment variables
+        ↓
+Deploy Next.js application
+        ↓
+Verify organization claims
+        ↓
+Verify protected RPC boundaries
+        ↓
+Run automated verification
+        ↓
+Introduce operational state through controlled boundaries
+```
 
-Signet intentionally demonstrates more than UI implementation.
+Operational projection tables should not be treated as an alternative write API.
 
-The project includes:
+---
 
-event-driven state architecture
+## Engineering decisions demonstrated
 
-PostgreSQL security boundaries
+Signet intentionally goes beyond frontend implementation.
 
-RLS-aware application design
+The project demonstrates:
 
-idempotent command processing
+- event-driven architecture
+- event sourcing concepts
+- PostgreSQL security boundaries
+- RLS-aware application design
+- server-bound identity
+- organization-scoped authorization
+- idempotent command processing
+- concurrency-aware commercial rules
+- hash-chained audit evidence
+- deterministic risk computation
+- read-only AI architecture
+- authenticated server rendering
+- production deployment
+- database integration testing
+- failure observability
+- read-only production demo isolation
 
-concurrency-aware business rules
+---
 
-hash-chained audit evidence
+## Design philosophy
 
-deterministic risk computation
+Signet starts with authority rather than the model.
 
-constrained AI architecture
+Before AI participates, the system attempts to establish:
 
-authenticated server rendering
-
-production deployment
-
-CI-backed database integration testing
-
-Design philosophy
-
-Most AI-enabled operations systems start with the model.
-
-Signet starts with authority.
-
-The system establishes:
-
+```text
 What happened?
+
 Who performed it?
+
 Which organization owns it?
+
 What state follows?
+
 What policy applies?
+
 What evidence supports the conclusion?
+
 Is the requested action authorized?
+```
 
-Only after those questions are resolved does AI enter the system.
+Only then does AI enter the system.
 
-Signet — deterministic operations, verifiable evidence, constrained AI.
+---
+
+## Current scope
+
+Signet is a portfolio/reference implementation of a security-conscious operational control architecture.
+
+It demonstrates production-oriented engineering patterns, but it is **not** presented as:
+
+- formal mathematical verification
+- universal tamper resistance
+- independently audited financial controls
+- enterprise compliance certification
+- cryptographic protection against a malicious infrastructure owner
+- proof of arbitrary multi-tenant SaaS isolation
+- formal WCAG certification
+
+The interface has been developed toward strong accessibility practices, including keyboard focus treatment, semantic navigation, reduced-motion support, accessible state indicators, and high-contrast UI tokens, but no independent WCAG certification is claimed.
+
+Security and reliability claims should be interpreted within the implemented boundaries and tested behavior of the project.
+
+---
+
+## The idea behind Signet
+
+Operational AI should not become trusted simply because it sounds confident.
+
+Confidence is not authority.
+
+A system should be able to establish evidence, provenance, identity, policy, state, and authorization independently of the model.
+
+That is what Signet is designed to demonstrate.
+
+> **Signet — deterministic operations, verifiable evidence, constrained AI.**
