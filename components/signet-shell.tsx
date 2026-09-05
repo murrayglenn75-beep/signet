@@ -10,6 +10,8 @@ import {
   FileCheck2,
   LayoutDashboard,
   LogOut,
+  Maximize2,
+  Minimize2,
   ScrollText,
   ShieldCheck,
   TriangleAlert,
@@ -70,6 +72,9 @@ export function SignetShell({
   const [isDemoWorkspace, setIsDemoWorkspace] =
     useState(false);
 
+  const [isFullscreen, setIsFullscreen] =
+    useState(false);
+
   useEffect(() => {
     let cancelled = false;
 
@@ -98,6 +103,44 @@ export function SignetShell({
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    function handleFullscreenChange() {
+      setIsFullscreen(
+        Boolean(document.fullscreenElement)
+      );
+    }
+
+    document.addEventListener(
+      "fullscreenchange",
+      handleFullscreenChange
+    );
+
+    handleFullscreenChange();
+
+    return () => {
+      document.removeEventListener(
+        "fullscreenchange",
+        handleFullscreenChange
+      );
+    };
+  }, []);
+
+  async function toggleFullscreen() {
+    try {
+      if (document.fullscreenElement) {
+        await document.exitFullscreen();
+        return;
+      }
+
+      await document.documentElement.requestFullscreen();
+    } catch (error) {
+      console.error(
+        "Unable to change fullscreen mode:",
+        error
+      );
+    }
+  }
 
   async function signOut() {
     const supabase = createClient();
@@ -203,26 +246,144 @@ export function SignetShell({
             <strong>{crumb}</strong>
           </div>
 
-          <div
-            className="demo-state"
-            role="status"
-            aria-live="polite"
-          >
-            <span
-              className="demo-dot"
-              aria-hidden="true"
-            />
+          <div className="topbar-actions">
+            <button
+              type="button"
+              className="fullscreen-button"
+              onClick={toggleFullscreen}
+              aria-label={
+                isFullscreen
+                  ? "Exit full screen"
+                  : "Enter full screen"
+              }
+              aria-pressed={isFullscreen}
+              title={
+                isFullscreen
+                  ? "Exit full screen"
+                  : "Enter full screen"
+              }
+            >
+              {isFullscreen ? (
+                <Minimize2
+                  size={16}
+                  strokeWidth={1.8}
+                  aria-hidden="true"
+                />
+              ) : (
+                <Maximize2
+                  size={16}
+                  strokeWidth={1.8}
+                  aria-hidden="true"
+                />
+              )}
 
-            <span>
-              {isDemoWorkspace
-                ? "DEMO WORKSPACE · READ ONLY"
-                : "PRODUCTION"}
-            </span>
+              <span>
+                {isFullscreen
+                  ? "Exit full screen"
+                  : "Full screen"}
+              </span>
+            </button>
+
+            <div
+              className="demo-state"
+              role="status"
+              aria-live="polite"
+            >
+              <span
+                className="demo-dot"
+                aria-hidden="true"
+              />
+
+              <span>
+                {isDemoWorkspace
+                  ? "DEMO WORKSPACE · READ ONLY"
+                  : "PRODUCTION"}
+              </span>
+            </div>
           </div>
         </header>
 
         {children}
       </main>
+
+      <style>{`
+        .topbar-actions {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+        }
+
+        .fullscreen-button {
+          min-height: 36px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          padding: 0 12px;
+          border: 1px solid var(--line-strong);
+          border-radius: 8px;
+          color: var(--text-secondary);
+          background: rgba(255, 255, 255, 0.025);
+          font: inherit;
+          font-size: 11px;
+          font-weight: 650;
+          letter-spacing: 0.02em;
+          cursor: pointer;
+          transition:
+            background 150ms ease,
+            border-color 150ms ease,
+            color 150ms ease,
+            transform 150ms ease;
+        }
+
+        .fullscreen-button:hover {
+          color: var(--text-primary);
+          border-color: var(--accent-border);
+          background: var(--accent-bg);
+          transform: translateY(-1px);
+        }
+
+        .fullscreen-button:focus-visible {
+          outline: 3px solid var(--focus);
+          outline-offset: 3px;
+        }
+
+        .fullscreen-button[aria-pressed="true"] {
+          color: var(--accent-strong);
+          border-color: var(--accent-border);
+          background: var(--accent-bg);
+        }
+
+        @media (max-width: 760px) {
+          .topbar-actions {
+            gap: 8px;
+          }
+
+          .fullscreen-button {
+            width: 38px;
+            min-width: 38px;
+            padding: 0;
+          }
+
+          .fullscreen-button span {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+          }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .fullscreen-button {
+            transition: none;
+          }
+        }
+      `}</style>
     </div>
   );
 }
