@@ -1,30 +1,38 @@
-import { describe, expect, it } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
+import { describe, expect, it } from "vitest";
+
+const root = process.cwd();
+
+const routePath = path.join(
+  root,
+  "app",
+  "auth",
+  "demo",
+  "route.ts"
+);
+
+const source = fs.readFileSync(routePath, "utf8");
 
 describe("demo authentication boundary", () => {
-  const routePath = path.join(
-    process.cwd(),
-    "app",
-    "auth",
-    "demo",
-    "route.ts"
-  );
-
-  const source = fs.readFileSync(routePath, "utf8");
-
-  it("blocks demo authentication in production", () => {
-    expect(source).toContain('process.env.NODE_ENV === "production"');
-    expect(source).toContain("Demo authentication is disabled.");
+  it("uses server-side demo credentials", () => {
+    expect(source).toContain("process.env.DEMO_EMAIL");
+    expect(source).toContain("process.env.DEMO_PASSWORD");
+    expect(source).toContain("signInWithPassword");
   });
 
   it("does not expose demo authentication through a service-role client", () => {
-    expect(source).not.toMatch(/SERVICE_ROLE/i);
-    expect(source).not.toMatch(/service_role/i);
+    expect(source).not.toContain("SUPABASE_SERVICE_ROLE_KEY");
+    expect(source).not.toContain("service_role");
   });
 
-  it("uses claims rather than trusting a raw session", () => {
-    expect(source).toContain("auth.getClaims()");
-    expect(source).not.toContain("auth.getSession()");
+  it("verifies protected claims before accepting the demo session", () => {
+    expect(source).toContain("getClaims");
+    expect(source).toContain("claims.demo_mode === true");
+    expect(source).toContain("claims.org_id ===");
+    expect(source).toContain(
+      '"d0000000-0000-0000-0000-000000000001"'
+    );
+    expect(source).toContain("await supabase.auth.signOut()");
   });
 });

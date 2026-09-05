@@ -33,7 +33,12 @@ type SignalRow = {
   signal_id: string;
   stream_type: string;
   stream_id: string;
-  code: "OVER_BUDGET" | "SCOPE_DRIFT" | "STALE" | "UNBILLED" | "UNRECONCILED";
+  code:
+    | "OVER_BUDGET"
+    | "SCOPE_DRIFT"
+    | "STALE"
+    | "UNBILLED"
+    | "UNRECONCILED";
   severity: "amber" | "red";
   detail: Record<string, unknown>;
   evidence_seqs: Array<number | string>;
@@ -70,7 +75,9 @@ function money(value: number) {
 }
 
 function pct(value: number | null) {
-  return value === null || !Number.isFinite(value) ? "—" : `${value.toFixed(1)}%`;
+  return value === null || !Number.isFinite(value)
+    ? "—"
+    : `${value.toFixed(1)}%`;
 }
 
 function metricForEngagement(row: EngagementRow) {
@@ -157,6 +164,7 @@ function MetricCard({
         <div className={`metric-value ${tone}`}>{value}</div>
         <div className="metric-meta">{meta}</div>
       </div>
+
       <div className={`metric-icon ${tone}`}>{icon}</div>
     </article>
   );
@@ -186,6 +194,7 @@ export default async function Home() {
       )
       .eq("status", "active")
       .order("last_event_seq", { ascending: false }),
+
     supabase
       .from("signals")
       .select(
@@ -193,12 +202,15 @@ export default async function Home() {
       )
       .is("cleared_at", null)
       .order("computed_at", { ascending: false }),
+
     supabase
       .from("proj_budget_lines")
       .select("stream_id,engagement_id"),
+
     supabase
       .from("proj_invoices")
       .select("stream_id,engagement_id"),
+
     supabase.rpc("get_trust_ledger_head"),
   ]);
 
@@ -211,28 +223,42 @@ export default async function Home() {
   const engagementById = new Map(
     engagements.map((row) => [row.stream_id, row])
   );
+
   const budgetToEngagement = new Map(
     budgetLines.map((row) => [row.stream_id, row.engagement_id])
   );
+
   const invoiceToEngagement = new Map(
     invoices.map((row) => [row.stream_id, row.engagement_id])
   );
 
   function engagementIdForSignal(signal: SignalRow) {
-    if (signal.stream_type === "engagement") return signal.stream_id;
-    if (signal.stream_type === "budget_line")
+    if (signal.stream_type === "engagement") {
+      return signal.stream_id;
+    }
+
+    if (signal.stream_type === "budget_line") {
       return budgetToEngagement.get(signal.stream_id);
-    if (signal.stream_type === "invoice")
+    }
+
+    if (signal.stream_type === "invoice") {
       return invoiceToEngagement.get(signal.stream_id);
+    }
+
     return undefined;
   }
 
   const signalsByEngagement = new Map<string, SignalRow[]>();
+
   for (const signal of signals) {
     const engagementId = engagementIdForSignal(signal);
-    if (!engagementId) continue;
+
+    if (!engagementId) {
+      continue;
+    }
 
     const existing = signalsByEngagement.get(engagementId) ?? [];
+
     existing.push(signal);
     signalsByEngagement.set(engagementId, existing);
   }
@@ -241,18 +267,27 @@ export default async function Home() {
     (sum, row) => sum + n(row.fee_amount),
     0
   );
+
   const totalCost = engagements.reduce(
     (sum, row) => sum + n(row.cost_accrued),
     0
   );
+
   const portfolioMargin =
     totalFee > 0 ? ((totalFee - totalCost) / totalFee) * 100 : null;
 
   const redEngagementIds = new Set<string>();
+
   for (const signal of signals) {
-    if (signal.severity !== "red") continue;
+    if (signal.severity !== "red") {
+      continue;
+    }
+
     const id = engagementIdForSignal(signal);
-    if (id) redEngagementIds.add(id);
+
+    if (id) {
+      redEngagementIds.add(id);
+    }
   }
 
   const revenueAtRisk = [...redEngagementIds].reduce((sum, id) => {
@@ -267,6 +302,7 @@ export default async function Home() {
   const unbilledSignals = signals.filter(
     (signal) => signal.code === "UNBILLED"
   );
+
   const oldestExposureDays =
     unbilledSignals.length > 0
       ? Math.max(
@@ -279,6 +315,7 @@ export default async function Home() {
   const healthRows = engagements.slice(0, 6).map((row) => {
     const metrics = metricForEngagement(row);
     const related = signalsByEngagement.get(row.stream_id) ?? [];
+
     const primary =
       related.find((signal) => signal.severity === "red") ?? related[0];
 
@@ -292,10 +329,13 @@ export default async function Home() {
 
   const visibleSignals = signals.slice(0, 4).map((signal) => {
     const engagementId = engagementIdForSignal(signal);
+
     const engagementName = engagementId
       ? engagementById.get(engagementId)?.name ?? undefined
       : undefined;
+
     const evidence = signal.evidence_seqs ?? [];
+
     const latestEvidence =
       evidence.length > 0 ? evidence[evidence.length - 1] : null;
 
@@ -307,28 +347,48 @@ export default async function Home() {
   });
 
   const leadSignal =
-    signals.find((signal) => signal.severity === "red") ?? signals[0] ?? null;
+    signals.find((signal) => signal.severity === "red") ??
+    signals[0] ??
+    null;
 
   let narrationTitle = "No active operational exceptions.";
+
   let narrationBody =
     "The deterministic signal layer currently has no active amber or red exceptions for this organization.";
 
   if (leadSignal) {
     const engagementId = engagementIdForSignal(leadSignal);
+
     const engagementName = engagementId
       ? engagementById.get(engagementId)?.name ?? undefined
       : undefined;
 
-    narrationTitle = `${engagementName ?? "Operational stream"} requires attention.`;
+    narrationTitle = `${
+      engagementName ?? "Operational stream"
+    } requires attention.`;
+
     narrationBody = signalDescription(leadSignal, engagementName);
   }
 
   const latestSeq = ledger[0]?.seq;
+
+  const ledgerStatus = ledgerResult.error
+    ? "Unavailable"
+    : latestSeq
+      ? "Chain active"
+      : "Ledger empty";
+
   const ledgerMeta = ledgerResult.error
     ? "Ledger read unavailable"
     : latestSeq
       ? `Latest evidence event #${latestSeq}`
       : "No events recorded yet";
+
+  const ledgerTone: "default" | "red" | "green" = ledgerResult.error
+    ? "red"
+    : latestSeq
+      ? "green"
+      : "default";
 
   const hasDataError =
     Boolean(engagementResult.error) ||
@@ -340,8 +400,12 @@ export default async function Home() {
     <SignetShell active="command" crumb="Command Center">
       <div className="content">
         <section className="hero">
-          <div className="eyebrow">VERIFIED OPERATIONS KERNEL · LIVE RLS DATA</div>
+          <div className="eyebrow">
+            VERIFIED OPERATIONS KERNEL · LIVE RLS DATA
+          </div>
+
           <h1>Command Center</h1>
+
           <p>
             Margin and delivery risk derived from authenticated deterministic
             projections and operational signals. The narration layer remains
@@ -358,40 +422,56 @@ export default async function Home() {
             }`}
             icon={<TrendingUp size={24} />}
           />
+
           <MetricCard
             label="Revenue at risk"
             value={money(revenueAtRisk)}
             meta={`${redEngagementIds.size} ${
-              redEngagementIds.size === 1 ? "engagement" : "engagements"
+              redEngagementIds.size === 1
+                ? "engagement"
+                : "engagements"
             } with red signals`}
             tone={redEngagementIds.size > 0 ? "red" : "default"}
             icon={<TriangleAlert size={24} />}
           />
+
           <MetricCard
             label="Unbilled work"
             value={money(totalUnbilled)}
             meta={
               oldestExposureDays === null
                 ? "No aged unbilled signal"
-                : `Oldest aged exposure: ${oldestExposureDays.toFixed(1)} days`
+                : `Oldest aged exposure: ${oldestExposureDays.toFixed(
+                    1
+                  )} days`
             }
             tone={totalUnbilled > 0 ? "amber" : "default"}
             icon={<Clock3 size={24} />}
           />
+
           <MetricCard
             label="Ledger status"
-            value={ledgerResult.error ? "Unavailable" : "Chain active"}
+            value={ledgerStatus}
             meta={ledgerMeta}
-            tone={ledgerResult.error ? "red" : "green"}
+            tone={ledgerTone}
             icon={<ShieldCheck size={24} />}
           />
         </section>
 
         {hasDataError ? (
-          <section className="panel full-panel" style={{ marginBottom: 20 }}>
+          <section
+            className="panel full-panel"
+            style={{ marginBottom: 20 }}
+          >
             <div style={{ padding: 24 }}>
-              <div className="danger-text">One or more live data reads failed.</div>
-              <p className="panel-note" style={{ marginTop: 8 }}>
+              <div className="danger-text">
+                One or more live data reads failed.
+              </div>
+
+              <p
+                className="panel-note"
+                style={{ marginTop: 8 }}
+              >
                 Signet is refusing to substitute hard-coded demo values.
               </p>
             </div>
@@ -405,15 +485,24 @@ export default async function Home() {
                 <Activity size={17} />
                 <span>Engagement health</span>
               </div>
-              <span className="panel-note">Live projection</span>
+
+              <span className="panel-note">
+                Live projection
+              </span>
             </div>
 
             {healthRows.length === 0 ? (
               <div style={{ padding: 28 }}>
-                <div className="engagement-name">No active engagements</div>
-                <p className="panel-note" style={{ marginTop: 8 }}>
-                  Append operational events and this view will update from the
-                  projection layer.
+                <div className="engagement-name">
+                  No active engagements
+                </div>
+
+                <p
+                  className="panel-note"
+                  style={{ marginTop: 8 }}
+                >
+                  Append operational events and this view will update from
+                  the projection layer.
                 </p>
               </div>
             ) : (
@@ -428,20 +517,26 @@ export default async function Home() {
                       <th>Signal</th>
                     </tr>
                   </thead>
+
                   <tbody>
                     {healthRows.map((item) => (
                       <tr key={item.stream_id}>
                         <td className="engagement-name">
                           {item.name ?? "Untitled engagement"}
                         </td>
+
                         <td>{item.client ?? "—"}</td>
+
                         <td
                           className={
-                            item.tone === "red" ? "danger-text" : ""
+                            item.tone === "red"
+                              ? "danger-text"
+                              : ""
                           }
                         >
                           {pct(item.margin)}
                         </td>
+
                         <td
                           className={
                             item.tone === "red"
@@ -453,8 +548,11 @@ export default async function Home() {
                         >
                           {pct(item.burn)}
                         </td>
+
                         <td>
-                          <span className={`risk-pill ${item.tone}`}>
+                          <span
+                            className={`risk-pill ${item.tone}`}
+                          >
                             {item.risk}
                           </span>
                         </td>
@@ -472,26 +570,39 @@ export default async function Home() {
                 <Radio size={17} />
                 <span>Active signals</span>
               </div>
-              <span className="panel-note">{signals.length} active</span>
+
+              <span className="panel-note">
+                {signals.length} active
+              </span>
             </div>
 
             <div className="signal-list">
               {visibleSignals.length === 0 ? (
                 <article className="signal-row">
                   <span className="signal-dot" />
+
                   <div className="signal-copy">
                     <strong>CLEAR</strong>
                     <p>No active deterministic exceptions.</p>
-                    <small>Signal engine returned zero active rows.</small>
+                    <small>
+                      Signal engine returned zero active rows.
+                    </small>
                   </div>
                 </article>
               ) : (
                 visibleSignals.map((signal) => (
-                  <article className="signal-row" key={signal.signal_id}>
-                    <span className={`signal-dot ${signal.severity}`} />
+                  <article
+                    className="signal-row"
+                    key={signal.signal_id}
+                  >
+                    <span
+                      className={`signal-dot ${signal.severity}`}
+                    />
+
                     <div className="signal-copy">
                       <strong>{signal.code}</strong>
                       <p>{signal.description}</p>
+
                       <small>
                         {signal.latestEvidence
                           ? `Evidence event #${signal.latestEvidence}`
@@ -511,17 +622,27 @@ export default async function Home() {
               <Sparkles size={16} />
               NARRATION LAYER — READ ONLY
             </div>
+
             <h2>{narrationTitle}</h2>
             <p>{narrationBody}</p>
+
             <small>
-              Current local narration is generated from deterministic signal
-              fields only. A future LLM adapter may explain this evidence, but
-              it will not receive authority to mutate operational state.
+              Current local narration is generated from deterministic
+              signal fields only. A future LLM adapter may explain this
+              evidence, but it will not receive authority to mutate
+              operational state.
             </small>
           </div>
-          <div className="signal-art" aria-hidden="true">
+
+          <div
+            className="signal-art"
+            aria-hidden="true"
+          >
             {Array.from({ length: 11 }).map((_, row) => (
-              <div className="wave-row" key={row}>
+              <div
+                className="wave-row"
+                key={row}
+              >
                 {Array.from({ length: 28 }).map((_, col) => (
                   <i
                     key={col}
@@ -533,7 +654,8 @@ export default async function Home() {
                           Math.abs(row - 5) * 0.05
                       ),
                       transform: `translateY(${
-                        Math.sin((col + row) / 2.35) * (4 + row * 0.55)
+                        Math.sin((col + row) / 2.35) *
+                        (4 + row * 0.55)
                       }px)`,
                     }}
                   />

@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -22,11 +23,36 @@ type Active =
   | "trust-ledger";
 
 const nav = [
-  { key: "command", href: "/", label: "Command Center", icon: LayoutDashboard },
-  { key: "engagements", href: "/engagements", label: "Engagements", icon: BriefcaseBusiness },
-  { key: "signals", href: "/signals", label: "Signals", icon: TriangleAlert },
-  { key: "change-orders", href: "/change-orders", label: "Change Orders", icon: FileCheck2 },
-  { key: "trust-ledger", href: "/trust-ledger", label: "Trust Ledger", icon: ScrollText },
+  {
+    key: "command",
+    href: "/",
+    label: "Command Center",
+    icon: LayoutDashboard,
+  },
+  {
+    key: "engagements",
+    href: "/engagements",
+    label: "Engagements",
+    icon: BriefcaseBusiness,
+  },
+  {
+    key: "signals",
+    href: "/signals",
+    label: "Signals",
+    icon: TriangleAlert,
+  },
+  {
+    key: "change-orders",
+    href: "/change-orders",
+    label: "Change Orders",
+    icon: FileCheck2,
+  },
+  {
+    key: "trust-ledger",
+    href: "/trust-ledger",
+    label: "Trust Ledger",
+    icon: ScrollText,
+  },
 ] as const;
 
 export function SignetShell({
@@ -40,9 +66,41 @@ export function SignetShell({
 }) {
   const router = useRouter();
 
+  const [isDemoWorkspace, setIsDemoWorkspace] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadWorkspaceMode() {
+      const supabase = createClient();
+
+      const { data, error } = await supabase.auth.getClaims();
+
+      if (cancelled || error) {
+        return;
+      }
+
+      const claims = data?.claims;
+
+      setIsDemoWorkspace(
+        claims?.demo_mode === true &&
+          claims?.org_id ===
+            "d0000000-0000-0000-0000-000000000001"
+      );
+    }
+
+    void loadWorkspaceMode();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   async function signOut() {
     const supabase = createClient();
+
     await supabase.auth.signOut();
+
     router.replace("/login");
     router.refresh();
   }
@@ -51,7 +109,7 @@ export function SignetShell({
     <div className="signet-shell">
       <aside className="sidebar">
         <div className="brand-row">
-          <span className="brand-mark">◇</span>
+          <span className="brand-mark">Γùç</span>
           <span className="brand-name">SIGNET</span>
         </div>
 
@@ -63,7 +121,9 @@ export function SignetShell({
               <Link
                 key={item.key}
                 href={item.href}
-                className={`nav-link ${active === item.key ? "active" : ""}`}
+                className={`nav-link ${
+                  active === item.key ? "active" : ""
+                }`}
               >
                 <Icon size={18} strokeWidth={1.7} />
                 <span>{item.label}</span>
@@ -75,6 +135,7 @@ export function SignetShell({
         <div className="sidebar-bottom">
           <div className="kernel-status">
             <ShieldCheck size={22} strokeWidth={1.7} />
+
             <div>
               <strong>Kernel online</strong>
               <span>Verified event boundaries active</span>
@@ -103,7 +164,10 @@ export function SignetShell({
 
           <div className="demo-state">
             <span className="demo-dot" />
-            Production
+
+            {isDemoWorkspace
+              ? "DEMO WORKSPACE · READ ONLY"
+              : "PRODUCTION"}
           </div>
         </header>
 
