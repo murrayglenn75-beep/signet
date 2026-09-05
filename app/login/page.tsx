@@ -1,5 +1,14 @@
 "use client";
 
+import {
+  ArrowRight,
+  Check,
+  Diamond,
+  Eye,
+  EyeOff,
+  LockKeyhole,
+  ShieldCheck,
+} from "lucide-react";
 import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "../../lib/supabase/client";
@@ -11,6 +20,8 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [demoLoading, setDemoLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const [nextPath, setNextPath] = useState("/");
   const [demoError, setDemoError] = useState<string | null>(null);
@@ -46,7 +57,7 @@ export default function LoginPage() {
       });
 
     if (signInError) {
-      setError(signInError.message);
+      setError("Email or password is incorrect.");
       setLoading(false);
       return;
     }
@@ -60,122 +71,694 @@ export default function LoginPage() {
   )}`;
 
   return (
-    <main
-      style={{
-        minHeight: "100vh",
-        display: "grid",
-        placeItems: "center",
-        padding: 24,
-      }}
-    >
-      <div
-        style={{
-          width: "100%",
-          maxWidth: 420,
-          display: "grid",
-          gap: 24,
-        }}
-      >
-        <form onSubmit={handleSubmit}>
-          <h1>Sign in to Signet</h1>
+    <main className="login-shell">
+      <div className="ambient ambient-one" />
+      <div className="ambient ambient-two" />
 
-          <p>Verified operations access</p>
+      <section className="login-frame">
+        <div className="story-panel">
+          <div>
+            <div className="brand">
+              <span className="brand-mark">
+                <Diamond size={25} strokeWidth={1.8} />
+              </span>
 
-          <label>
-            Email
-            <input
-              type="email"
-              value={email}
-              onChange={(event) =>
-                setEmail(event.target.value)
-              }
-              required
-              autoComplete="email"
-            />
-          </label>
+              <span>SIGNET</span>
+            </div>
 
-          <label>
-            Password
-            <input
-              type="password"
-              value={password}
-              onChange={(event) =>
-                setPassword(event.target.value)
-              }
-              required
-              autoComplete="current-password"
-            />
-          </label>
+            <div className="story-copy">
+              <div className="eyebrow">
+                VERIFIED OPERATIONS CONTROL
+              </div>
 
-          {error ? (
-            <p role="alert">{error}</p>
-          ) : null}
+              <h1>
+                Operational truth,
+                <br />
+                without the guesswork.
+              </h1>
 
-          <button
-            type="submit"
-            disabled={loading}
-          >
-            {loading
-              ? "Signing in..."
-              : "Sign in"}
-          </button>
-        </form>
+              <p className="story-description">
+                Signet combines deterministic risk detection,
+                controlled operational workflows, and a
+                tamper-evident event ledger in one verified
+                command environment.
+              </p>
+            </div>
+          </div>
 
-        <section
-          style={{
-            borderTop:
-              "1px solid rgba(255,255,255,0.12)",
-            paddingTop: 20,
-          }}
-        >
-          <h2 style={{ marginBottom: 8 }}>
-            Explore the demo workspace
-          </h2>
+          <div className="trust-list">
+            <div className="trust-item">
+              <span className="trust-icon">
+                <Check size={14} strokeWidth={2.4} />
+              </span>
+              Append-only operational event kernel
+            </div>
 
-          <p style={{ marginBottom: 16 }}>
-            Open a read-only workspace with seeded
-            engagements, deterministic risk signals,
-            change-order history, and a tamper-evident Trust
-            Ledger.
-          </p>
+            <div className="trust-item">
+              <span className="trust-icon">
+                <Check size={14} strokeWidth={2.4} />
+              </span>
+              Deterministic risk and control signals
+            </div>
 
-          {demoError ? (
-            <p
-              role="alert"
-              style={{ marginBottom: 16 }}
+            <div className="trust-item">
+              <span className="trust-icon">
+                <Check size={14} strokeWidth={2.4} />
+              </span>
+              Isolated, read-only public demo workspace
+            </div>
+          </div>
+
+          <div className="story-footer">
+            <ShieldCheck size={16} strokeWidth={1.8} />
+            Security boundaries enforced at the data layer
+          </div>
+        </div>
+
+        <div className="access-panel">
+          <div className="access-content">
+            <div className="mobile-brand">
+              <span className="brand-mark">
+                <Diamond size={22} strokeWidth={1.8} />
+              </span>
+              <span>SIGNET</span>
+            </div>
+
+            <div className="access-heading">
+              <span className="access-kicker">
+                PUBLIC DEMO
+              </span>
+
+              <h2>Explore Signet</h2>
+
+              <p>
+                Enter a fully seeded, isolated workspace and
+                inspect the system without changing operational
+                state.
+              </p>
+            </div>
+
+            {demoError ? (
+              <div className="alert" role="alert">
+                Demo access is temporarily unavailable. You can
+                still sign in with an authorized account.
+              </div>
+            ) : null}
+
+            <a
+              className={`demo-button ${
+                demoLoading ? "is-loading" : ""
+              }`}
+              href={demoHref}
+              onClick={() => setDemoLoading(true)}
+              aria-disabled={demoLoading}
             >
-              Demo login is temporarily unavailable.
-            </p>
-          ) : null}
+              <span>
+                {demoLoading
+                  ? "Opening workspace..."
+                  : "Enter demo workspace"}
+              </span>
 
-          <a
-            href={demoHref}
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              width: "100%",
-              minHeight: 44,
-              textDecoration: "none",
-              border: "1px solid currentColor",
-              borderRadius: 8,
-              fontWeight: 600,
-            }}
-          >
-            Enter demo workspace
-          </a>
+              <ArrowRight size={18} strokeWidth={1.9} />
+            </a>
 
-          <p
-            style={{
-              marginTop: 12,
-              fontSize: 13,
-              opacity: 0.7,
-            }}
-          >
-            Demo access is isolated and read-only.
-          </p>
-        </section>
-      </div>
+            <div className="demo-meta">
+              <span>
+                <LockKeyhole size={14} />
+                Read only
+              </span>
+
+              <span>•</span>
+
+              <span>No credentials required</span>
+            </div>
+
+            <div className="divider">
+              <span>Authorized access</span>
+            </div>
+
+            <form
+              className="login-form"
+              onSubmit={handleSubmit}
+            >
+              <div className="form-heading">
+                <h3>Operator sign in</h3>
+                <p>Use your authorized Signet account.</p>
+              </div>
+
+              <div className="field">
+                <label htmlFor="email">Email address</label>
+
+                <input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(event) =>
+                    setEmail(event.target.value)
+                  }
+                  required
+                  autoComplete="email"
+                  placeholder="name@company.com"
+                  disabled={loading}
+                />
+              </div>
+
+              <div className="field">
+                <label htmlFor="password">Password</label>
+
+                <div className="password-wrap">
+                  <input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(event) =>
+                      setPassword(event.target.value)
+                    }
+                    required
+                    autoComplete="current-password"
+                    placeholder="Enter your password"
+                    disabled={loading}
+                  />
+
+                  <button
+                    className="password-toggle"
+                    type="button"
+                    onClick={() =>
+                      setShowPassword((current) => !current)
+                    }
+                    aria-label={
+                      showPassword
+                        ? "Hide password"
+                        : "Show password"
+                    }
+                  >
+                    {showPassword ? (
+                      <EyeOff size={17} />
+                    ) : (
+                      <Eye size={17} />
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              {error ? (
+                <div className="alert" role="alert">
+                  {error}
+                </div>
+              ) : null}
+
+              <button
+                className="sign-in-button"
+                type="submit"
+                disabled={loading}
+              >
+                {loading ? (
+                  "Signing in..."
+                ) : (
+                  <>
+                    Sign in
+                    <ArrowRight
+                      size={17}
+                      strokeWidth={1.9}
+                    />
+                  </>
+                )}
+              </button>
+            </form>
+
+            <div className="access-footer">
+              <ShieldCheck size={15} strokeWidth={1.8} />
+              Authenticated access · Verified boundaries
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <style>{`
+        * {
+          box-sizing: border-box;
+        }
+
+        .login-shell {
+          position: relative;
+          min-height: 100vh;
+          overflow: hidden;
+          display: grid;
+          place-items: center;
+          padding: 28px;
+          background:
+            radial-gradient(
+              circle at 18% 12%,
+              rgba(69, 93, 255, 0.12),
+              transparent 34%
+            ),
+            radial-gradient(
+              circle at 82% 88%,
+              rgba(30, 184, 142, 0.07),
+              transparent 30%
+            ),
+            #080b10;
+          color: #f4f6f8;
+        }
+
+        .ambient {
+          position: absolute;
+          border-radius: 999px;
+          filter: blur(100px);
+          pointer-events: none;
+          opacity: 0.28;
+        }
+
+        .ambient-one {
+          width: 340px;
+          height: 340px;
+          top: -150px;
+          left: -100px;
+          background: #3248d8;
+        }
+
+        .ambient-two {
+          width: 280px;
+          height: 280px;
+          right: -100px;
+          bottom: -140px;
+          background: #178969;
+        }
+
+        .login-frame {
+          position: relative;
+          z-index: 1;
+          width: min(1080px, 100%);
+          min-height: 670px;
+          display: grid;
+          grid-template-columns: 1.05fr 0.95fr;
+          overflow: hidden;
+          border: 1px solid rgba(255, 255, 255, 0.09);
+          border-radius: 22px;
+          background: rgba(12, 16, 22, 0.94);
+          box-shadow:
+            0 35px 90px rgba(0, 0, 0, 0.45),
+            inset 0 1px 0 rgba(255, 255, 255, 0.03);
+          backdrop-filter: blur(18px);
+        }
+
+        .story-panel {
+          display: flex;
+          flex-direction: column;
+          justify-content: space-between;
+          padding: 52px;
+          border-right: 1px solid rgba(255, 255, 255, 0.07);
+          background:
+            linear-gradient(
+              145deg,
+              rgba(255, 255, 255, 0.035),
+              transparent 55%
+            ),
+            #0b0f15;
+        }
+
+        .brand,
+        .mobile-brand {
+          display: flex;
+          align-items: center;
+          gap: 11px;
+          font-size: 15px;
+          font-weight: 760;
+          letter-spacing: 0.19em;
+        }
+
+        .brand-mark {
+          display: inline-grid;
+          place-items: center;
+          color: #aeb8ff;
+        }
+
+        .story-copy {
+          margin-top: 92px;
+          max-width: 500px;
+        }
+
+        .eyebrow,
+        .access-kicker {
+          margin-bottom: 18px;
+          font-size: 11px;
+          line-height: 1;
+          font-weight: 750;
+          letter-spacing: 0.17em;
+          color: #8897ff;
+        }
+
+        .story-copy h1 {
+          margin: 0;
+          font-size: clamp(42px, 4.2vw, 62px);
+          line-height: 1.02;
+          letter-spacing: -0.048em;
+          font-weight: 640;
+        }
+
+        .story-description {
+          max-width: 465px;
+          margin: 25px 0 0;
+          color: #939ca8;
+          font-size: 15px;
+          line-height: 1.75;
+        }
+
+        .trust-list {
+          display: grid;
+          gap: 13px;
+          margin-top: 48px;
+        }
+
+        .trust-item {
+          display: flex;
+          align-items: center;
+          gap: 11px;
+          color: #b2bac5;
+          font-size: 13px;
+        }
+
+        .trust-icon {
+          width: 22px;
+          height: 22px;
+          display: grid;
+          place-items: center;
+          flex: 0 0 auto;
+          border: 1px solid rgba(112, 217, 174, 0.25);
+          border-radius: 999px;
+          color: #70d9ae;
+          background: rgba(112, 217, 174, 0.07);
+        }
+
+        .story-footer,
+        .access-footer {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          color: #69727d;
+          font-size: 11px;
+          letter-spacing: 0.02em;
+        }
+
+        .access-panel {
+          display: grid;
+          place-items: center;
+          padding: 50px 52px;
+          background: rgba(14, 18, 24, 0.84);
+        }
+
+        .access-content {
+          width: min(390px, 100%);
+        }
+
+        .mobile-brand {
+          display: none;
+          margin-bottom: 44px;
+        }
+
+        .access-heading {
+          margin-bottom: 27px;
+        }
+
+        .access-heading h2 {
+          margin: 0;
+          color: #f6f7f9;
+          font-size: 31px;
+          line-height: 1.15;
+          letter-spacing: -0.035em;
+          font-weight: 650;
+        }
+
+        .access-heading p {
+          margin: 12px 0 0;
+          color: #89939f;
+          font-size: 13.5px;
+          line-height: 1.65;
+        }
+
+        .demo-button,
+        .sign-in-button {
+          width: 100%;
+          min-height: 50px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 10px;
+          border-radius: 9px;
+          font-size: 13.5px;
+          font-weight: 680;
+          transition:
+            transform 150ms ease,
+            border-color 150ms ease,
+            background 150ms ease,
+            opacity 150ms ease;
+        }
+
+        .demo-button {
+          justify-content: space-between;
+          padding: 0 18px;
+          color: #0a0d12;
+          text-decoration: none;
+          background: #eef1ff;
+          border: 1px solid #eef1ff;
+        }
+
+        .demo-button:hover {
+          transform: translateY(-1px);
+          background: #ffffff;
+        }
+
+        .demo-button.is-loading {
+          pointer-events: none;
+          opacity: 0.7;
+        }
+
+        .demo-meta {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          margin-top: 11px;
+          color: #69737f;
+          font-size: 11px;
+        }
+
+        .demo-meta span {
+          display: flex;
+          align-items: center;
+          gap: 5px;
+        }
+
+        .divider {
+          position: relative;
+          display: flex;
+          justify-content: center;
+          margin: 31px 0 27px;
+          color: #626c77;
+          font-size: 10px;
+          font-weight: 650;
+          letter-spacing: 0.12em;
+          text-transform: uppercase;
+        }
+
+        .divider::before {
+          content: "";
+          position: absolute;
+          top: 50%;
+          left: 0;
+          right: 0;
+          height: 1px;
+          background: rgba(255, 255, 255, 0.08);
+        }
+
+        .divider span {
+          position: relative;
+          padding: 0 12px;
+          background: #0e1218;
+        }
+
+        .login-form {
+          display: grid;
+          gap: 18px;
+        }
+
+        .form-heading {
+          margin-bottom: 1px;
+        }
+
+        .form-heading h3 {
+          margin: 0;
+          font-size: 15px;
+          font-weight: 650;
+          color: #e7eaf0;
+        }
+
+        .form-heading p {
+          margin: 5px 0 0;
+          color: #707a86;
+          font-size: 12px;
+        }
+
+        .field {
+          display: grid;
+          gap: 8px;
+        }
+
+        .field label {
+          color: #a9b1bb;
+          font-size: 11.5px;
+          font-weight: 620;
+        }
+
+        .field input {
+          width: 100%;
+          height: 46px;
+          outline: none;
+          border: 1px solid rgba(255, 255, 255, 0.11);
+          border-radius: 8px;
+          padding: 0 13px;
+          color: #f1f3f5;
+          background: rgba(255, 255, 255, 0.025);
+          font: inherit;
+          font-size: 13px;
+          transition:
+            border-color 150ms ease,
+            box-shadow 150ms ease,
+            background 150ms ease;
+        }
+
+        .field input::placeholder {
+          color: #4e5864;
+        }
+
+        .field input:hover {
+          border-color: rgba(255, 255, 255, 0.18);
+        }
+
+        .field input:focus {
+          border-color: rgba(126, 143, 255, 0.72);
+          box-shadow: 0 0 0 3px rgba(87, 105, 232, 0.12);
+          background: rgba(255, 255, 255, 0.04);
+        }
+
+        .field input:disabled {
+          opacity: 0.58;
+        }
+
+        .password-wrap {
+          position: relative;
+        }
+
+        .password-wrap input {
+          padding-right: 44px;
+        }
+
+        .password-toggle {
+          position: absolute;
+          top: 50%;
+          right: 9px;
+          transform: translateY(-50%);
+          width: 30px;
+          height: 30px;
+          display: grid;
+          place-items: center;
+          border: 0;
+          border-radius: 6px;
+          color: #68727e;
+          background: transparent;
+          cursor: pointer;
+        }
+
+        .password-toggle:hover {
+          color: #b8c0ca;
+          background: rgba(255, 255, 255, 0.04);
+        }
+
+        .sign-in-button {
+          border: 1px solid rgba(255, 255, 255, 0.12);
+          color: #dfe3e8;
+          background: rgba(255, 255, 255, 0.05);
+          cursor: pointer;
+        }
+
+        .sign-in-button:hover:not(:disabled) {
+          border-color: rgba(255, 255, 255, 0.2);
+          background: rgba(255, 255, 255, 0.08);
+        }
+
+        .sign-in-button:disabled {
+          cursor: wait;
+          opacity: 0.6;
+        }
+
+        .alert {
+          padding: 11px 12px;
+          border: 1px solid rgba(255, 112, 112, 0.18);
+          border-radius: 8px;
+          color: #f0a4a4;
+          background: rgba(255, 77, 77, 0.055);
+          font-size: 11.5px;
+          line-height: 1.5;
+        }
+
+        .access-footer {
+          justify-content: center;
+          margin-top: 29px;
+        }
+
+        @media (max-width: 820px) {
+          .login-shell {
+            padding: 16px;
+          }
+
+          .login-frame {
+            min-height: auto;
+            grid-template-columns: 1fr;
+          }
+
+          .story-panel {
+            display: none;
+          }
+
+          .access-panel {
+            min-height: calc(100vh - 32px);
+            padding: 42px 28px;
+          }
+
+          .mobile-brand {
+            display: flex;
+          }
+
+          .access-content {
+            width: min(410px, 100%);
+          }
+        }
+
+        @media (max-width: 480px) {
+          .login-shell {
+            padding: 0;
+          }
+
+          .login-frame {
+            min-height: 100vh;
+            border: 0;
+            border-radius: 0;
+          }
+
+          .access-panel {
+            min-height: 100vh;
+            padding: 34px 22px;
+          }
+
+          .mobile-brand {
+            margin-bottom: 52px;
+          }
+
+          .access-heading h2 {
+            font-size: 28px;
+          }
+        }
+      `}</style>
     </main>
   );
 }
