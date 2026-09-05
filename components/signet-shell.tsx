@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   BriefcaseBusiness,
+  Diamond,
   FileCheck2,
   LayoutDashboard,
   LogOut,
@@ -109,7 +110,10 @@ export function SignetShell({
     <div className="signet-shell">
       <aside className="sidebar">
         <div className="brand-row">
-          <span className="brand-mark">Γùç</span>
+          <span className="brand-mark" aria-hidden="true">
+            <Diamond size={24} strokeWidth={1.8} />
+          </span>
+
           <span className="brand-name">SIGNET</span>
         </div>
 
