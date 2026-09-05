@@ -67,7 +67,8 @@ export function SignetShell({
 }) {
   const router = useRouter();
 
-  const [isDemoWorkspace, setIsDemoWorkspace] = useState(false);
+  const [isDemoWorkspace, setIsDemoWorkspace] =
+    useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -75,7 +76,8 @@ export function SignetShell({
     async function loadWorkspaceMode() {
       const supabase = createClient();
 
-      const { data, error } = await supabase.auth.getClaims();
+      const { data, error } =
+        await supabase.auth.getClaims();
 
       if (cancelled || error) {
         return;
@@ -108,28 +110,46 @@ export function SignetShell({
 
   return (
     <div className="signet-shell">
-      <aside className="sidebar">
+      <aside
+        className="sidebar"
+        aria-label="Signet navigation"
+      >
         <div className="brand-row">
-          <span className="brand-mark" aria-hidden="true">
+          <span
+            className="brand-mark"
+            aria-hidden="true"
+          >
             <Diamond size={24} strokeWidth={1.8} />
           </span>
 
           <span className="brand-name">SIGNET</span>
         </div>
 
-        <nav className="side-nav" aria-label="Primary">
+        <nav
+          className="side-nav"
+          aria-label="Primary navigation"
+        >
           {nav.map((item) => {
             const Icon = item.icon;
+            const isActive = active === item.key;
 
             return (
               <Link
                 key={item.key}
                 href={item.href}
                 className={`nav-link ${
-                  active === item.key ? "active" : ""
+                  isActive ? "active" : ""
                 }`}
+                aria-current={
+                  isActive ? "page" : undefined
+                }
               >
-                <Icon size={18} strokeWidth={1.7} />
+                <Icon
+                  size={18}
+                  strokeWidth={1.7}
+                  aria-hidden="true"
+                />
+
                 <span>{item.label}</span>
               </Link>
             );
@@ -137,12 +157,21 @@ export function SignetShell({
         </nav>
 
         <div className="sidebar-bottom">
-          <div className="kernel-status">
-            <ShieldCheck size={22} strokeWidth={1.7} />
+          <div
+            className="kernel-status"
+            aria-label="Kernel status: online"
+          >
+            <ShieldCheck
+              size={22}
+              strokeWidth={1.7}
+              aria-hidden="true"
+            />
 
             <div>
               <strong>Kernel online</strong>
-              <span>Verified event boundaries active</span>
+              <span>
+                Verified event boundaries active
+              </span>
             </div>
           </div>
 
@@ -151,27 +180,44 @@ export function SignetShell({
             className="profile-orb"
             onClick={signOut}
             title="Sign out"
-            aria-label="Sign out"
+            aria-label="Sign out of Signet"
           >
-            <LogOut size={16} />
+            <LogOut
+              size={16}
+              aria-hidden="true"
+            />
           </button>
         </div>
       </aside>
 
       <main className="main">
         <header className="topbar">
-          <div className="crumbs">
+          <div
+            className="crumbs"
+            aria-label="Breadcrumb"
+          >
             <span>Operations</span>
-            <span>/</span>
+
+            <span aria-hidden="true">/</span>
+
             <strong>{crumb}</strong>
           </div>
 
-          <div className="demo-state">
-            <span className="demo-dot" />
+          <div
+            className="demo-state"
+            role="status"
+            aria-live="polite"
+          >
+            <span
+              className="demo-dot"
+              aria-hidden="true"
+            />
 
-            {isDemoWorkspace
-              ? "DEMO WORKSPACE · READ ONLY"
-              : "PRODUCTION"}
+            <span>
+              {isDemoWorkspace
+                ? "DEMO WORKSPACE · READ ONLY"
+                : "PRODUCTION"}
+            </span>
           </div>
         </header>
 

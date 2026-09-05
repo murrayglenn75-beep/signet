@@ -72,14 +72,27 @@ export default function LoginPage() {
 
   return (
     <main className="login-shell">
-      <div className="ambient ambient-one" />
-      <div className="ambient ambient-two" />
+      <div
+        className="ambient ambient-one"
+        aria-hidden="true"
+      />
 
-      <section className="login-frame">
+      <div
+        className="ambient ambient-two"
+        aria-hidden="true"
+      />
+
+      <section
+        className="login-frame"
+        aria-label="Signet access"
+      >
         <div className="story-panel">
           <div>
             <div className="brand">
-              <span className="brand-mark">
+              <span
+                className="brand-mark"
+                aria-hidden="true"
+              >
                 <Diamond size={25} strokeWidth={1.8} />
               </span>
 
@@ -108,29 +121,46 @@ export default function LoginPage() {
 
           <div className="trust-list">
             <div className="trust-item">
-              <span className="trust-icon">
+              <span
+                className="trust-icon"
+                aria-hidden="true"
+              >
                 <Check size={14} strokeWidth={2.4} />
               </span>
+
               Append-only operational event kernel
             </div>
 
             <div className="trust-item">
-              <span className="trust-icon">
+              <span
+                className="trust-icon"
+                aria-hidden="true"
+              >
                 <Check size={14} strokeWidth={2.4} />
               </span>
+
               Deterministic risk and control signals
             </div>
 
             <div className="trust-item">
-              <span className="trust-icon">
+              <span
+                className="trust-icon"
+                aria-hidden="true"
+              >
                 <Check size={14} strokeWidth={2.4} />
               </span>
+
               Isolated, read-only public demo workspace
             </div>
           </div>
 
           <div className="story-footer">
-            <ShieldCheck size={16} strokeWidth={1.8} />
+            <ShieldCheck
+              size={16}
+              strokeWidth={1.8}
+              aria-hidden="true"
+            />
+
             Security boundaries enforced at the data layer
           </div>
         </div>
@@ -138,9 +168,13 @@ export default function LoginPage() {
         <div className="access-panel">
           <div className="access-content">
             <div className="mobile-brand">
-              <span className="brand-mark">
+              <span
+                className="brand-mark"
+                aria-hidden="true"
+              >
                 <Diamond size={22} strokeWidth={1.8} />
               </span>
+
               <span>SIGNET</span>
             </div>
 
@@ -170,8 +204,16 @@ export default function LoginPage() {
                 demoLoading ? "is-loading" : ""
               }`}
               href={demoHref}
-              onClick={() => setDemoLoading(true)}
+              onClick={(event) => {
+                if (demoLoading) {
+                  event.preventDefault();
+                  return;
+                }
+
+                setDemoLoading(true);
+              }}
               aria-disabled={demoLoading}
+              aria-busy={demoLoading}
             >
               <span>
                 {demoLoading
@@ -179,16 +221,23 @@ export default function LoginPage() {
                   : "Enter demo workspace"}
               </span>
 
-              <ArrowRight size={18} strokeWidth={1.9} />
+              <ArrowRight
+                size={18}
+                strokeWidth={1.9}
+                aria-hidden="true"
+              />
             </a>
 
             <div className="demo-meta">
               <span>
-                <LockKeyhole size={14} />
+                <LockKeyhole
+                  size={14}
+                  aria-hidden="true"
+                />
                 Read only
               </span>
 
-              <span>•</span>
+              <span aria-hidden="true">•</span>
 
               <span>No credentials required</span>
             </div>
@@ -200,6 +249,7 @@ export default function LoginPage() {
             <form
               className="login-form"
               onSubmit={handleSubmit}
+              aria-busy={loading}
             >
               <div className="form-heading">
                 <h3>Operator sign in</h3>
@@ -207,7 +257,9 @@ export default function LoginPage() {
               </div>
 
               <div className="field">
-                <label htmlFor="email">Email address</label>
+                <label htmlFor="email">
+                  Email address
+                </label>
 
                 <input
                   id="email"
@@ -220,11 +272,17 @@ export default function LoginPage() {
                   autoComplete="email"
                   placeholder="name@company.com"
                   disabled={loading}
+                  aria-invalid={Boolean(error)}
+                  aria-describedby={
+                    error ? "login-error" : undefined
+                  }
                 />
               </div>
 
               <div className="field">
-                <label htmlFor="password">Password</label>
+                <label htmlFor="password">
+                  Password
+                </label>
 
                 <div className="password-wrap">
                   <input
@@ -238,6 +296,10 @@ export default function LoginPage() {
                     autoComplete="current-password"
                     placeholder="Enter your password"
                     disabled={loading}
+                    aria-invalid={Boolean(error)}
+                    aria-describedby={
+                      error ? "login-error" : undefined
+                    }
                   />
 
                   <button
@@ -253,16 +315,27 @@ export default function LoginPage() {
                     }
                   >
                     {showPassword ? (
-                      <EyeOff size={17} />
+                      <EyeOff
+                        size={17}
+                        aria-hidden="true"
+                      />
                     ) : (
-                      <Eye size={17} />
+                      <Eye
+                        size={17}
+                        aria-hidden="true"
+                      />
                     )}
                   </button>
                 </div>
               </div>
 
               {error ? (
-                <div className="alert" role="alert">
+                <div
+                  id="login-error"
+                  className="alert"
+                  role="alert"
+                  aria-live="assertive"
+                >
                   {error}
                 </div>
               ) : null}
@@ -277,9 +350,11 @@ export default function LoginPage() {
                 ) : (
                   <>
                     Sign in
+
                     <ArrowRight
                       size={17}
                       strokeWidth={1.9}
+                      aria-hidden="true"
                     />
                   </>
                 )}
@@ -287,7 +362,12 @@ export default function LoginPage() {
             </form>
 
             <div className="access-footer">
-              <ShieldCheck size={15} strokeWidth={1.8} />
+              <ShieldCheck
+                size={15}
+                strokeWidth={1.8}
+                aria-hidden="true"
+              />
+
               Authenticated access · Verified boundaries
             </div>
           </div>
@@ -405,7 +485,7 @@ export default function LoginPage() {
           line-height: 1;
           font-weight: 750;
           letter-spacing: 0.17em;
-          color: #8897ff;
+          color: #9da8ff;
         }
 
         .story-copy h1 {
@@ -419,7 +499,7 @@ export default function LoginPage() {
         .story-description {
           max-width: 465px;
           margin: 25px 0 0;
-          color: #939ca8;
+          color: #a6afba;
           font-size: 15px;
           line-height: 1.75;
         }
@@ -434,7 +514,7 @@ export default function LoginPage() {
           display: flex;
           align-items: center;
           gap: 11px;
-          color: #b2bac5;
+          color: #b7bec8;
           font-size: 13px;
         }
 
@@ -444,10 +524,10 @@ export default function LoginPage() {
           display: grid;
           place-items: center;
           flex: 0 0 auto;
-          border: 1px solid rgba(112, 217, 174, 0.25);
+          border: 1px solid rgba(112, 217, 174, 0.4);
           border-radius: 999px;
-          color: #70d9ae;
-          background: rgba(112, 217, 174, 0.07);
+          color: #8be5bf;
+          background: rgba(112, 217, 174, 0.08);
         }
 
         .story-footer,
@@ -455,7 +535,7 @@ export default function LoginPage() {
           display: flex;
           align-items: center;
           gap: 8px;
-          color: #69727d;
+          color: #a6afba;
           font-size: 11px;
           letter-spacing: 0.02em;
         }
@@ -491,7 +571,7 @@ export default function LoginPage() {
 
         .access-heading p {
           margin: 12px 0 0;
-          color: #89939f;
+          color: #a6afba;
           font-size: 13.5px;
           line-height: 1.65;
         }
@@ -528,9 +608,14 @@ export default function LoginPage() {
           background: #ffffff;
         }
 
+        .demo-button:focus-visible {
+          outline: 3px solid #aeb8ff;
+          outline-offset: 4px;
+        }
+
         .demo-button.is-loading {
           pointer-events: none;
-          opacity: 0.7;
+          opacity: 0.78;
         }
 
         .demo-meta {
@@ -539,7 +624,7 @@ export default function LoginPage() {
           justify-content: center;
           gap: 8px;
           margin-top: 11px;
-          color: #69737f;
+          color: #a6afba;
           font-size: 11px;
         }
 
@@ -554,7 +639,7 @@ export default function LoginPage() {
           display: flex;
           justify-content: center;
           margin: 31px 0 27px;
-          color: #626c77;
+          color: #a6afba;
           font-size: 10px;
           font-weight: 650;
           letter-spacing: 0.12em;
@@ -568,7 +653,7 @@ export default function LoginPage() {
           left: 0;
           right: 0;
           height: 1px;
-          background: rgba(255, 255, 255, 0.08);
+          background: rgba(255, 255, 255, 0.16);
         }
 
         .divider span {
@@ -595,7 +680,7 @@ export default function LoginPage() {
 
         .form-heading p {
           margin: 5px 0 0;
-          color: #707a86;
+          color: #a6afba;
           font-size: 12px;
         }
 
@@ -605,16 +690,16 @@ export default function LoginPage() {
         }
 
         .field label {
-          color: #a9b1bb;
+          color: #b7bec8;
           font-size: 11.5px;
           font-weight: 620;
         }
 
         .field input {
           width: 100%;
-          height: 46px;
+          height: 48px;
           outline: none;
-          border: 1px solid rgba(255, 255, 255, 0.11);
+          border: 1px solid rgba(255, 255, 255, 0.18);
           border-radius: 8px;
           padding: 0 13px;
           color: #f1f3f5;
@@ -628,21 +713,29 @@ export default function LoginPage() {
         }
 
         .field input::placeholder {
-          color: #4e5864;
+          color: #a6afba;
+          opacity: 1;
         }
 
         .field input:hover {
-          border-color: rgba(255, 255, 255, 0.18);
+          border-color: rgba(255, 255, 255, 0.3);
         }
 
-        .field input:focus {
-          border-color: rgba(126, 143, 255, 0.72);
-          box-shadow: 0 0 0 3px rgba(87, 105, 232, 0.12);
+        .field input:focus-visible {
+          border-color: #aeb8ff;
+          box-shadow:
+            0 0 0 3px rgba(174, 184, 255, 0.22);
           background: rgba(255, 255, 255, 0.04);
+          outline: 2px solid #aeb8ff;
+          outline-offset: 2px;
         }
 
         .field input:disabled {
-          opacity: 0.58;
+          opacity: 0.65;
+        }
+
+        .field input[aria-invalid="true"] {
+          border-color: #ffa0a0;
         }
 
         .password-wrap {
@@ -650,53 +743,63 @@ export default function LoginPage() {
         }
 
         .password-wrap input {
-          padding-right: 44px;
+          padding-right: 48px;
         }
 
         .password-toggle {
           position: absolute;
           top: 50%;
-          right: 9px;
+          right: 7px;
           transform: translateY(-50%);
-          width: 30px;
-          height: 30px;
+          width: 36px;
+          height: 36px;
           display: grid;
           place-items: center;
           border: 0;
-          border-radius: 6px;
-          color: #68727e;
+          border-radius: 7px;
+          color: #b7bec8;
           background: transparent;
           cursor: pointer;
         }
 
         .password-toggle:hover {
-          color: #b8c0ca;
-          background: rgba(255, 255, 255, 0.04);
+          color: #ffffff;
+          background: rgba(255, 255, 255, 0.07);
+        }
+
+        .password-toggle:focus-visible {
+          outline: 3px solid #aeb8ff;
+          outline-offset: 2px;
         }
 
         .sign-in-button {
-          border: 1px solid rgba(255, 255, 255, 0.12);
-          color: #dfe3e8;
-          background: rgba(255, 255, 255, 0.05);
+          border: 1px solid rgba(255, 255, 255, 0.2);
+          color: #f4f6f8;
+          background: rgba(255, 255, 255, 0.06);
           cursor: pointer;
         }
 
         .sign-in-button:hover:not(:disabled) {
-          border-color: rgba(255, 255, 255, 0.2);
-          background: rgba(255, 255, 255, 0.08);
+          border-color: rgba(174, 184, 255, 0.5);
+          background: rgba(174, 184, 255, 0.1);
+        }
+
+        .sign-in-button:focus-visible {
+          outline: 3px solid #aeb8ff;
+          outline-offset: 3px;
         }
 
         .sign-in-button:disabled {
           cursor: wait;
-          opacity: 0.6;
+          opacity: 0.7;
         }
 
         .alert {
           padding: 11px 12px;
-          border: 1px solid rgba(255, 112, 112, 0.18);
+          border: 1px solid rgba(255, 160, 160, 0.34);
           border-radius: 8px;
-          color: #f0a4a4;
-          background: rgba(255, 77, 77, 0.055);
+          color: #ffb1b1;
+          background: rgba(255, 77, 77, 0.075);
           font-size: 11.5px;
           line-height: 1.5;
         }
@@ -704,6 +807,17 @@ export default function LoginPage() {
         .access-footer {
           justify-content: center;
           margin-top: 29px;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          *,
+          *::before,
+          *::after {
+            scroll-behavior: auto !important;
+            transition-duration: 0.01ms !important;
+            animation-duration: 0.01ms !important;
+            animation-iteration-count: 1 !important;
+          }
         }
 
         @media (max-width: 820px) {
