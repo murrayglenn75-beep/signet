@@ -1,5 +1,14 @@
 # Signet
 
+## 30-second overview
+
+**Signet is an operations control system for service businesses that keeps business truth and AI explanation separate.** Projects, budgets, change orders, signals, and audit evidence are determined by authenticated events and deterministic rules; AI can explain that evidence but cannot change it.
+
+**What I built:** an append-only event kernel, deterministic projections and risk signals, organization-scoped authorization, change-order authority gates, idempotent command handling, tamper-evident receipts/ledger data, a read-only AI narration layer, automated tests, and a deployed application.
+
+**Why it matters:** operational AI becomes risky when a model is allowed to decide what is true or authorized. Signet demonstrates a different pattern: establish verifiable state first, then let AI help people understand it.
+
+
 **Verified operations infrastructure for service firms.**
 
 Signet is a production-style operations control system built around an append-only event kernel, deterministic business logic, authenticated security boundaries, tamper-evident operational evidence, and a constrained read-only AI narration layer.
