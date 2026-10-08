@@ -11,6 +11,10 @@ import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
 import { SignetShell } from "../components/signet-shell";
 import { createClient } from "../lib/supabase/server";
+import {
+  readWithPostgrestFutureJwtRecovery,
+  type RecoveryEvent,
+} from "../lib/resilience/postgrest-future-jwt-recovery";
 
 export const dynamic = "force-dynamic";
 
@@ -234,6 +238,18 @@ export default async function Home() {
     redirect("/login?next=/");
   }
 
+  function recoveryTelemetry(source: string) {
+    return (event: RecoveryEvent) => {
+      console.warn("[Signet] transient PostgREST read recovery", {
+        source,
+        classification: event.classification,
+        attempt: event.attempt,
+        delayMs: event.delayMs,
+        recovered: event.recovered,
+      });
+    };
+  }
+
   const [
     engagementResult,
     signalResult,
@@ -241,42 +257,49 @@ export default async function Home() {
     invoiceResult,
     ledgerResult,
   ] = await Promise.all([
-    supabase
-      .from("proj_engagements")
-      .select(
-        "stream_id,name,client,fee_model,fee_amount,planned_hours,hours_logged,cost_accrued,unbilled_amount,approved_co_hours,status,last_event_seq"
-      )
-      .eq("status", "active")
-      .order(
-        "last_event_seq",
-        { ascending: false }
-      ),
+    readWithPostgrestFutureJwtRecovery(
+      () =>
+        supabase
+          .from("proj_engagements")
+          .select(
+            "stream_id,name,client,fee_model,fee_amount,planned_hours,hours_logged,cost_accrued,unbilled_amount,approved_co_hours,status,last_event_seq"
+          )
+          .eq("status", "active")
+          .order("last_event_seq", { ascending: false }),
+      { onRecoveryEvent: recoveryTelemetry("engagements") }
+    ),
 
-    supabase
-      .from("signals")
-      .select(
-        "signal_id,stream_type,stream_id,code,severity,detail,evidence_seqs,computed_at"
-      )
-      .is("cleared_at", null)
-      .order(
-        "computed_at",
-        { ascending: false }
-      ),
+    readWithPostgrestFutureJwtRecovery(
+      () =>
+        supabase
+          .from("signals")
+          .select(
+            "signal_id,stream_type,stream_id,code,severity,detail,evidence_seqs,computed_at"
+          )
+          .is("cleared_at", null)
+          .order("computed_at", { ascending: false }),
+      { onRecoveryEvent: recoveryTelemetry("signals") }
+    ),
 
-    supabase
-      .from("proj_budget_lines")
-      .select(
-        "stream_id,engagement_id"
-      ),
+    readWithPostgrestFutureJwtRecovery(
+      () =>
+        supabase
+          .from("proj_budget_lines")
+          .select("stream_id,engagement_id"),
+      { onRecoveryEvent: recoveryTelemetry("budget lines") }
+    ),
 
-    supabase
-      .from("proj_invoices")
-      .select(
-        "stream_id,engagement_id"
-      ),
+    readWithPostgrestFutureJwtRecovery(
+      () =>
+        supabase
+          .from("proj_invoices")
+          .select("stream_id,engagement_id"),
+      { onRecoveryEvent: recoveryTelemetry("invoices") }
+    ),
 
-    supabase.rpc(
-      "get_trust_ledger_head"
+    readWithPostgrestFutureJwtRecovery(
+      () => supabase.rpc("get_trust_ledger_head"),
+      { onRecoveryEvent: recoveryTelemetry("trust ledger") }
     ),
   ]);
 
