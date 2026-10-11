@@ -1,5 +1,8 @@
 # Signet
 
+> **Independent review:** [Reproduce the checks and inspect the trust boundaries](docs/REVIEWER_QUICKSTART.md). This guide separates documented evidence from production guarantees.
+
+
 ## 30-second overview
 
 **Signet is an operations control system for service businesses that keeps business truth and AI explanation separate.** Projects, budgets, change orders, signals, and audit evidence are determined by authenticated events and deterministic rules; AI can explain that evidence but cannot change it.
