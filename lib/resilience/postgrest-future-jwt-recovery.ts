@@ -61,7 +61,7 @@ export async function readWithPostgrestFutureJwtRecovery<T>(
     await sleep(delayMs);
     result = await operation();
 
-    if (!isPostgrestFutureJwtError(result.error)) {
+    if (!result.error) {
       options.onRecoveryEvent?.({
         classification: "transient-jwt-future",
         attempt: retryIndex + 1,
