@@ -96,5 +96,13 @@ describe("PostgREST future-JWT read recovery", () => {
     const root = process.cwd();
     const appSource = fs.readFileSync(path.join(root, "app", "page.tsx"), "utf8");
     expect(appSource).toContain("readWithPostgrestFutureJwtRecovery");
+    const entries = fs.readdirSync(path.join(root, "app"), { recursive: true, withFileTypes: true });
+    for (const entry of entries) {
+      if (!entry.isFile() || !entry.name.endsWith(".ts") && !entry.name.endsWith(".tsx")) continue;
+      const parent = entry.parentPath;
+      const filename = path.join(parent, entry.name);
+      if (filename === path.join(root, "app", "page.tsx")) continue;
+      expect(fs.readFileSync(filename, "utf8")).not.toContain("readWithPostgrestFutureJwtRecovery");
+    }
   });
 });
