@@ -9,7 +9,9 @@
     "db:reset": "supabase db reset",
     "dev": "next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "security:gate": "node scripts/security-gate.mjs",
+    "verify": "npm test && npm run security:gate && npm run build"
   },
   "devDependencies": {
     "@types/node": "26.4.0",
